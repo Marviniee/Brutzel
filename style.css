@@ -948,11 +948,127 @@ button, input {
   color: #fff;
 }
 
+.range-picker__custom {
+  display: flex;
+  gap: 20px;
+  margin: 4px 0 20px;
+}
+
+.range-picker__custom[hidden] { display: none; }
+
+.range-picker__custom-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.range-picker__custom-field input {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.shopping-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.shopping-list[hidden] { display: none; }
+
 .shopping-list__category {
   background: var(--color-surface);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  padding: 16px 18px;
+  padding: 18px;
+}
+
+.shopping-list__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.shopping-list__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shopping-list__icon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-secondary);
+}
+
+.shopping-list__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.shopping-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shopping-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.shopping-list__item:last-child { border-bottom: none; }
+
+.shopping-list__checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #fff;
+}
+
+.shopping-list__item.is-checked .shopping-list__checkbox {
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+}
+
+.shopping-list__name {
+  flex: 1;
+  font-size: 0.92rem;
+}
+
+.shopping-list__amount {
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.shopping-list__item.is-checked .shopping-list__name,
+.shopping-list__item.is-checked .shopping-list__amount {
+  text-decoration: line-through;
+  color: var(--color-text-secondary);
 }
 
 /* ---------- Techniken ---------- */

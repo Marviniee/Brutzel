@@ -181,18 +181,28 @@
           <h1>Einkaufsliste</h1>
         </header>
 
-        <div class="range-picker">
-          <button class="range-picker__option is-active">Diese Woche</button>
-          <button class="range-picker__option">Freier Zeitraum</button>
-          <button class="range-picker__option">Alle künftigen Mahlzeiten</button>
+        <div class="range-picker" id="einkaufsliste-range-picker">
+          <button class="range-picker__option is-active" data-range="woche">Diese Woche</button>
+          <button class="range-picker__option" data-range="frei">Freier Zeitraum</button>
+          <button class="range-picker__option" data-range="alle">Alle künftigen Mahlzeiten</button>
         </div>
 
-        <div class="shopping-list">
-          <div class="shopping-list__category">
-            <h2 class="section-title">Obst &amp; Gemüse</h2>
-            <p class="empty-hint">Noch keine Artikel — wird automatisch aus dem Kalender berechnet.</p>
-          </div>
+        <div class="range-picker__custom" id="einkaufsliste-frei-felder" hidden>
+          <label class="range-picker__custom-field">
+            Von
+            <input type="date" id="einkaufsliste-von" />
+          </label>
+          <label class="range-picker__custom-field">
+            Bis
+            <input type="date" id="einkaufsliste-bis" />
+          </label>
         </div>
+
+        <p id="einkaufsliste-leer-hinweis" class="empty-hint" hidden>
+          Keine Mahlzeiten im gewählten Zeitraum geplant.
+        </p>
+
+        <div class="shopping-list" id="einkaufsliste-inhalt"></div>
       </section>
 
       <!-- ---------- Techniken ---------- -->

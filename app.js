@@ -10,8 +10,8 @@
 // APP_BUILD: reiner Zähler, bei JEDER Codeänderung an index.html, style.css,
 // app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
 // service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
-const APP_SEMVER = "0.5.0";
-const APP_BUILD = 6;
+const APP_SEMVER = "0.6.0";
+const APP_BUILD = 7;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -276,6 +276,9 @@ document.querySelectorAll("[data-close-kalender-overlay]").forEach((el) => {
 });
 
 document.getElementById("kalender-overlay-kochmodus").addEventListener("click", () => {
+  if (aktuellerKalenderEintrag) {
+    ausgewaehlteRezeptId = aktuellerKalenderEintrag.rezept_id;
+  }
   schliesseKalenderOverlay();
   oeffneKochmodus();
 });
@@ -1212,6 +1215,283 @@ document.querySelectorAll("[data-close-technik-overlay]").forEach((el) => {
     document.getElementById("technik-overlay").hidden = true;
   });
 });
+
+// ---------- Einkaufsliste ----------
+
+// Feste Kategorien-Reihenfolge + Anzeigenamen, passend zu den Kategorie-Werten
+// in data/zutaten.json (siehe README/Technische Referenz).
+const EINKAUFSLISTE_KATEGORIEN = [
+  { key: "obst_gemuese", label: "Obst & Gemüse" },
+  { key: "milchprodukte", label: "Milchprodukte" },
+  { key: "fleisch_fisch", label: "Fleisch & Fisch" },
+  { key: "backwaren", label: "Backwaren" },
+  { key: "getraenke", label: "Getränke" },
+  { key: "gewuerze_oele", label: "Gewürze & Öle" },
+  { key: "tiefkuehl", label: "Tiefkühl" },
+  { key: "vorraete", label: "Vorräte" },
+  { key: "sonstiges", label: "Sonstiges" },
+];
+
+const EINKAUFSLISTE_ICONS = {
+  obst_gemuese: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12c0-4 3-7 7-7 1 3-1 5-3 6 3 0 5 2 5 5 0 3-3 5-6 5-4 0-7-3-7-7 0-1 .3-1.8 .8-2.6"/><path d="M13 5c1-1 2-1.5 3-1.5"/></svg>',
+  milchprodukte: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v3.5l2 3V20a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9.5l2-3V3Z"/><path d="M7.5 13h9"/></svg>',
+  fleisch_fisch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4c3 0 6 3 6 6.5S17 19 13 19c-2 0-3-1-3-1s-4 2-5.5.5S6 14 6 14s-1-1-1-3c0-4 3.5-7 9-7Z"/><circle cx="15" cy="9" r="1" fill="currentColor" stroke="none"/></svg>',
+  backwaren: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13c0-5 3.5-8 8-8s8 3 8 8-3 6-8 6-8-1-8-6Z"/><path d="M9 10v6M12 9v7M15 10v6"/></svg>',
+  getraenke: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4l.5 4-1 1v13a1.5 1.5 0 0 1-1.5 1.5h0A1.5 1.5 0 0 1 10.5 20V7l-1-1L10 2Z"/><path d="M9.7 11h4.6"/></svg>',
+  gewuerze_oele: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2 3 5 6.5 5 10a5 5 0 0 1-10 0c0-3.5 3-7 5-10Z"/></svg>',
+  tiefkuehl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 6.5l14 11M19 6.5 5 17.5"/><path d="M12 3l-2 2M12 3l2 2M12 21l-2-2M12 21l2-2M5 6.5l2.7.7M5 6.5l.7-2.7M19 6.5l-2.7.7M19 6.5l-.7-2.7M5 17.5l2.7-.7M5 17.5l.7 2.7M19 17.5l-2.7-.7M19 17.5l-.7 2.7"/></svg>',
+  vorraete: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="8" width="12" height="12" rx="2"/><path d="M9 8V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>',
+  sonstiges: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>',
+};
+
+// Umrechnung in eine gemeinsame Basiseinheit pro Dimension, damit z.B. g+kg
+// oder ml+l addiert werden können. Einheiten außerhalb dieser Tabelle (sollte
+// laut Datenmodell nicht vorkommen, da intern immer g/kg/ml/l/Stück
+// gespeichert wird) bilden konservativ ihre eigene Dimension und werden nie
+// mit etwas anderem zusammengerechnet.
+const EINKAUFSLISTE_EINHEITEN = {
+  g: { dimension: "gewicht", proBasis: 1 },
+  kg: { dimension: "gewicht", proBasis: 1000 },
+  ml: { dimension: "volumen", proBasis: 1 },
+  l: { dimension: "volumen", proBasis: 1000 },
+  Stück: { dimension: "stueck", proBasis: 1 },
+};
+
+function ermittleDimension(einheit) {
+  return EINKAUFSLISTE_EINHEITEN[einheit] || { dimension: `einheit:${einheit}`, proBasis: 1 };
+}
+
+function formatiereAggregierteMenge(dimension, summeBasis, ursprungsEinheit) {
+  if (dimension === "gewicht") {
+    return summeBasis >= 1000 ? formatiereMenge(summeBasis / 1000, "kg") : formatiereMenge(summeBasis, "g");
+  }
+  if (dimension === "volumen") {
+    return summeBasis >= 1000 ? formatiereMenge(summeBasis / 1000, "l") : formatiereMenge(summeBasis, "ml");
+  }
+  if (dimension === "stueck") {
+    return formatiereMenge(summeBasis, "Stück");
+  }
+  return formatiereMenge(summeBasis, ursprungsEinheit);
+}
+
+const EINKAUFSLISTE_STORAGE_KEY = "brutzel-einkaufsliste-abgehakt";
+
+function ladeAbgehakteZutaten() {
+  try {
+    const roh = localStorage.getItem(EINKAUFSLISTE_STORAGE_KEY);
+    return roh ? new Set(JSON.parse(roh)) : new Set();
+  } catch (fehler) {
+    console.warn("Abhak-Status konnte nicht geladen werden:", fehler);
+    return new Set();
+  }
+}
+
+function speichereAbgehakteZutaten(set) {
+  try {
+    localStorage.setItem(EINKAUFSLISTE_STORAGE_KEY, JSON.stringify([...set]));
+  } catch (fehler) {
+    console.warn("Abhak-Status konnte nicht gespeichert werden:", fehler);
+  }
+}
+
+let einkaufslisteAbgehakt = ladeAbgehakteZutaten();
+let einkaufslisteModus = "woche";
+
+function eintraegeImZeitraum(kalender, modus) {
+  if (modus === "woche") {
+    const tageIso = new Set(wochentageAb(montagDerWoche(new Date())).map(datumZuISO));
+    return kalender.filter((eintrag) => tageIso.has(eintrag.datum));
+  }
+  if (modus === "frei") {
+    const von = document.getElementById("einkaufsliste-von").value;
+    const bis = document.getElementById("einkaufsliste-bis").value;
+    if (!von || !bis) return [];
+    return kalender.filter((eintrag) => eintrag.datum >= von && eintrag.datum <= bis);
+  }
+  if (modus === "alle") {
+    const heute = heuteISO();
+    return kalender.filter((eintrag) => eintrag.datum >= heute);
+  }
+  return [];
+}
+
+async function aggregiereEinkaufsliste(eintraege) {
+  const rezeptIds = [...new Set(eintraege.map((eintrag) => eintrag.rezept_id))];
+  const rezepteMap = new Map();
+  await Promise.all(
+    rezeptIds.map(async (id) => {
+      try {
+        rezepteMap.set(id, await ladeRezeptGecacht(id));
+      } catch (fehler) {
+        console.warn(`Rezept ${id} konnte nicht geladen werden:`, fehler);
+      }
+    })
+  );
+
+  const zutatenKarteGeladen = await ladeZutatenKarte();
+
+  // Schlüssel = zutat_id (oder Name als Fallback) + Dimension, damit z.B.
+  // "Zwiebel in Stück" und "Zwiebel in g" (unterschiedliche Dimension)
+  // bewusst getrennte Zeilen bleiben statt falsch zusammengerechnet zu werden.
+  const gruppen = new Map();
+
+  eintraege.forEach((eintrag) => {
+    const rezept = rezepteMap.get(eintrag.rezept_id);
+    if (!rezept) return;
+    const basis = rezept.basisportionen || 1;
+    const faktor = (eintrag.portionen || basis) / basis;
+
+    (rezept.zutaten || []).forEach((zutat) => {
+      if (!zutat.menge || typeof zutat.menge.betrag !== "number") return;
+
+      const dim = ermittleDimension(zutat.menge.einheit);
+      const zutatSchluessel = zutat.zutat_id || `name:${(zutat.anzeige_text || "").toLowerCase()}`;
+      const schluessel = `${zutatSchluessel}|${dim.dimension}`;
+
+      const skalierterBetrag = zutat.menge.betrag * faktor;
+      const betragInBasis = skalierterBetrag * dim.proBasis;
+
+      if (!gruppen.has(schluessel)) {
+        gruppen.set(schluessel, {
+          schluessel,
+          zutatId: zutat.zutat_id || null,
+          fallbackName: zutat.anzeige_text || zutatSchluessel,
+          dimension: dim.dimension,
+          ursprungsEinheit: zutat.menge.einheit,
+          summeBasis: 0,
+        });
+      }
+      gruppen.get(schluessel).summeBasis += betragInBasis;
+    });
+  });
+
+  return [...gruppen.values()].map((gruppe) => {
+    const zutatInfo = gruppe.zutatId ? zutatenKarteGeladen.get(gruppe.zutatId) : null;
+    return {
+      schluessel: gruppe.schluessel,
+      name: (zutatInfo && zutatInfo.name) || gruppe.fallbackName,
+      kategorie: (zutatInfo && zutatInfo.kategorie) || "sonstiges",
+      mengeText: formatiereAggregierteMenge(gruppe.dimension, gruppe.summeBasis, gruppe.ursprungsEinheit),
+    };
+  });
+}
+
+function erstelleEinkaufslisteZeile(artikel) {
+  const li = document.createElement("li");
+  li.className = "shopping-list__item";
+  if (einkaufslisteAbgehakt.has(artikel.schluessel)) li.classList.add("is-checked");
+
+  const checkbox = document.createElement("span");
+  checkbox.className = "shopping-list__checkbox";
+  checkbox.textContent = "✓";
+
+  const name = document.createElement("span");
+  name.className = "shopping-list__name";
+  name.textContent = artikel.name;
+
+  const menge = document.createElement("span");
+  menge.className = "shopping-list__amount";
+  menge.textContent = artikel.mengeText;
+
+  li.append(checkbox, name, menge);
+
+  li.addEventListener("click", () => {
+    if (einkaufslisteAbgehakt.has(artikel.schluessel)) {
+      einkaufslisteAbgehakt.delete(artikel.schluessel);
+    } else {
+      einkaufslisteAbgehakt.add(artikel.schluessel);
+    }
+    li.classList.toggle("is-checked");
+    speichereAbgehakteZutaten(einkaufslisteAbgehakt);
+  });
+
+  return li;
+}
+
+function erstelleEinkaufslisteKategorieCard(kategorie, artikel) {
+  const card = document.createElement("div");
+  card.className = "shopping-list__category";
+
+  const header = document.createElement("div");
+  header.className = "shopping-list__header";
+
+  const iconWrap = document.createElement("div");
+  iconWrap.className = "shopping-list__icon";
+  iconWrap.innerHTML = EINKAUFSLISTE_ICONS[kategorie.key] || EINKAUFSLISTE_ICONS.sonstiges;
+
+  const titel = document.createElement("span");
+  titel.className = "shopping-list__title";
+  titel.textContent = kategorie.label;
+
+  header.append(iconWrap, titel);
+
+  const liste = document.createElement("ul");
+  liste.className = "shopping-list__items";
+  artikel
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, "de"))
+    .forEach((eintrag) => liste.appendChild(erstelleEinkaufslisteZeile(eintrag)));
+
+  card.append(header, liste);
+  return card;
+}
+
+async function renderEinkaufsliste() {
+  const leerHinweis = document.getElementById("einkaufsliste-leer-hinweis");
+  const inhalt = document.getElementById("einkaufsliste-inhalt");
+  if (!leerHinweis || !inhalt) return;
+
+  let kalender = [];
+  try {
+    kalender = await ladeJSON("./data/kalender.json");
+  } catch (fehler) {
+    console.warn("Kalender konnte nicht geladen werden:", fehler);
+  }
+
+  const eintraege = eintraegeImZeitraum(kalender, einkaufslisteModus);
+
+  if (eintraege.length === 0) {
+    leerHinweis.hidden = false;
+    inhalt.hidden = true;
+    inhalt.innerHTML = "";
+    return;
+  }
+
+  const artikelListe = await aggregiereEinkaufsliste(eintraege);
+
+  if (artikelListe.length === 0) {
+    leerHinweis.hidden = false;
+    inhalt.hidden = true;
+    inhalt.innerHTML = "";
+    return;
+  }
+
+  leerHinweis.hidden = true;
+  inhalt.hidden = false;
+  inhalt.innerHTML = "";
+
+  EINKAUFSLISTE_KATEGORIEN.forEach((kategorie) => {
+    const artikelInKategorie = artikelListe.filter((a) => a.kategorie === kategorie.key);
+    if (artikelInKategorie.length === 0) return;
+    inhalt.appendChild(erstelleEinkaufslisteKategorieCard(kategorie, artikelInKategorie));
+  });
+}
+
+document.querySelectorAll("#einkaufsliste-range-picker .range-picker__option").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    einkaufslisteModus = btn.dataset.range;
+    document.querySelectorAll("#einkaufsliste-range-picker .range-picker__option").forEach((b) => {
+      b.classList.toggle("is-active", b === btn);
+    });
+    document.getElementById("einkaufsliste-frei-felder").hidden = einkaufslisteModus !== "frei";
+    renderEinkaufsliste();
+  });
+});
+
+document.getElementById("einkaufsliste-von")?.addEventListener("change", renderEinkaufsliste);
+document.getElementById("einkaufsliste-bis")?.addEventListener("change", renderEinkaufsliste);
+
+renderEinkaufsliste();
 
 // ---------- Einstellungen ----------
 
