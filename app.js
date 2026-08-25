@@ -10,8 +10,8 @@
 // APP_BUILD: reiner Zähler, bei JEDER Codeänderung an index.html, style.css,
 // app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
 // service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
-const APP_SEMVER = "0.1.0";
-const APP_BUILD = 2;
+const APP_SEMVER = "0.2.0";
+const APP_BUILD = 3;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -75,7 +75,7 @@ document.querySelectorAll("[data-close-kochmodus]").forEach((btn) => {
   btn.addEventListener("click", schliesseKochmodus);
 });
 
-// ---------- Home ----------
+// ---------- Daten-Hilfsfunktionen (von Home + Kalender genutzt) ----------
 
 const SLOT_LABELS = { fruehstueck: "Frühstück", mittag: "Mittag", abend: "Abend" };
 
@@ -89,12 +89,210 @@ function ladeRezept(id) {
   return ladeJSON(`./data/rezepte/${id}.json`);
 }
 
-function heuteISO() {
-  const jetzt = new Date();
-  const monat = String(jetzt.getMonth() + 1).padStart(2, "0");
-  const tag = String(jetzt.getDate()).padStart(2, "0");
-  return `${jetzt.getFullYear()}-${monat}-${tag}`;
+function datumZuISO(datum) {
+  const monat = String(datum.getMonth() + 1).padStart(2, "0");
+  const tag = String(datum.getDate()).padStart(2, "0");
+  return `${datum.getFullYear()}-${monat}-${tag}`;
 }
+
+function heuteISO() {
+  return datumZuISO(new Date());
+}
+
+const rezeptCache = new Map();
+
+function ladeRezeptGecacht(id) {
+  if (!rezeptCache.has(id)) {
+    rezeptCache.set(id, ladeRezept(id));
+  }
+  return rezeptCache.get(id);
+}
+
+// ---------- Kalender ----------
+
+// Reihenfolge + Konfiguration der Kalender-Zeilen. Später um weitere Slots
+// (z.B. "snack") aus den Einstellungen erweiterbar, ohne die Rendering-
+// Logik unten anzufassen.
+const KALENDER_SLOTS = ["fruehstueck", "mittag", "abend"];
+const KALENDER_TAG_KUERZEL = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+
+function montagDerWoche(datum) {
+  const d = new Date(datum);
+  const versatz = (d.getDay() + 6) % 7; // Montag = 0, ... Sonntag = 6
+  d.setDate(d.getDate() - versatz);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function wochentageAb(montag) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(montag);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+}
+
+let kalenderWochenStart = montagDerWoche(new Date());
+let aktuellerKalenderEintrag = null;
+
+function erstelleKalenderChip(eintrag, rezept) {
+  const farbe = eintrag.typ === "mealprep" ? "orange" : "blue";
+  const chip = document.createElement("button");
+  chip.type = "button";
+  chip.className = `chip chip--${farbe}`;
+
+  if (rezept.icon) {
+    const img = document.createElement("img");
+    img.className = "chip__icon";
+    img.src = rezept.icon;
+    img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    chip.appendChild(img);
+  }
+
+  const name = document.createElement("span");
+  name.className = "chip__name";
+  name.textContent = rezept.name;
+  chip.appendChild(name);
+
+  chip.addEventListener("click", () => oeffneKalenderOverlay(eintrag, rezept));
+  return chip;
+}
+
+async function renderKalenderWoche() {
+  const grid = document.getElementById("kalender-woche-grid");
+  const titelEl = document.getElementById("kalender-monat-jahr");
+  if (!grid || !titelEl) return;
+  grid.innerHTML = "";
+
+  const wochentage = wochentageAb(kalenderWochenStart);
+
+  // Für den Monat/Jahr-Titel den Donnerstag der Woche heranziehen (ISO-
+  // Konvention), damit eine Woche, die über einen Monatswechsel läuft,
+  // dem Monat zugeordnet wird, der den Großteil der Woche trägt.
+  const titelText = wochentage[3].toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  titelEl.textContent = titelText.charAt(0).toUpperCase() + titelText.slice(1);
+
+  const heuteIso = heuteISO();
+
+  const kopfzeile = document.createElement("div");
+  kopfzeile.className = "week-grid__row week-grid__row--head";
+  kopfzeile.appendChild(document.createElement("div")).className = "week-grid__slot-label";
+
+  wochentage.forEach((datum, i) => {
+    const tagZelle = document.createElement("div");
+    tagZelle.className = "week-grid__day";
+    if (datumZuISO(datum) === heuteIso) tagZelle.classList.add("is-today");
+
+    const kuerzel = document.createTextNode(`${KALENDER_TAG_KUERZEL[i]} `);
+    const nummer = document.createElement("span");
+    nummer.textContent = String(datum.getDate());
+
+    tagZelle.append(kuerzel, nummer);
+    kopfzeile.appendChild(tagZelle);
+  });
+  grid.appendChild(kopfzeile);
+
+  let kalender = [];
+  try {
+    kalender = await ladeJSON("./data/kalender.json");
+  } catch (fehler) {
+    console.warn("Kalender konnte nicht geladen werden:", fehler);
+  }
+
+  const wochenIsoSet = new Set(wochentage.map(datumZuISO));
+  const eintraegeWoche = kalender.filter((eintrag) => wochenIsoSet.has(eintrag.datum));
+
+  const rezeptIds = [...new Set(eintraegeWoche.map((eintrag) => eintrag.rezept_id))];
+  const rezepteMap = new Map();
+  await Promise.all(
+    rezeptIds.map(async (id) => {
+      try {
+        rezepteMap.set(id, await ladeRezeptGecacht(id));
+      } catch (fehler) {
+        console.warn(`Rezept ${id} konnte nicht geladen werden:`, fehler);
+      }
+    })
+  );
+
+  KALENDER_SLOTS.forEach((slot) => {
+    const zeile = document.createElement("div");
+    zeile.className = "week-grid__row";
+
+    const label = document.createElement("div");
+    label.className = "week-grid__slot-label";
+    label.textContent = SLOT_LABELS[slot] || slot;
+    zeile.appendChild(label);
+
+    wochentage.forEach((datum) => {
+      const iso = datumZuISO(datum);
+      const zelle = document.createElement("div");
+      zelle.className = "week-grid__cell";
+
+      const eintrag = eintraegeWoche.find((e) => e.datum === iso && e.slot === slot);
+      const rezept = eintrag && rezepteMap.get(eintrag.rezept_id);
+
+      if (eintrag && rezept) {
+        zelle.appendChild(erstelleKalenderChip(eintrag, rezept));
+      } else {
+        const leer = document.createElement("div");
+        leer.className = "week-grid__cell--empty";
+        zelle.appendChild(leer);
+      }
+      zeile.appendChild(zelle);
+    });
+
+    grid.appendChild(zeile);
+  });
+}
+
+function oeffneKalenderOverlay(eintrag, rezept) {
+  aktuellerKalenderEintrag = eintrag;
+
+  const iconEl = document.getElementById("kalender-overlay-icon");
+  iconEl.innerHTML = "";
+  if (rezept.icon) {
+    const img = document.createElement("img");
+    img.src = rezept.icon;
+    img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    iconEl.appendChild(img);
+  }
+
+  document.getElementById("kalender-overlay-name").textContent = rezept.name;
+  document.getElementById("kalender-overlay-portionen").textContent = eintrag.portionen
+    ? `${eintrag.portionen} Portionen`
+    : "";
+  document.getElementById("kalender-eintrag-overlay").hidden = false;
+}
+
+function schliesseKalenderOverlay() {
+  document.getElementById("kalender-eintrag-overlay").hidden = true;
+  aktuellerKalenderEintrag = null;
+}
+
+document.querySelectorAll("[data-close-kalender-overlay]").forEach((el) => {
+  el.addEventListener("click", schliesseKalenderOverlay);
+});
+
+document.getElementById("kalender-overlay-kochmodus").addEventListener("click", () => {
+  schliesseKalenderOverlay();
+  oeffneKochmodus();
+});
+
+document.getElementById("kalender-woche-zurueck").addEventListener("click", () => {
+  kalenderWochenStart.setDate(kalenderWochenStart.getDate() - 7);
+  renderKalenderWoche();
+});
+
+document.getElementById("kalender-woche-vor").addEventListener("click", () => {
+  kalenderWochenStart.setDate(kalenderWochenStart.getDate() + 7);
+  renderKalenderWoche();
+});
+
+renderKalenderWoche();
+
+// ---------- Home ----------
 
 function erstelleIconElement(pfad, fallbackKlasse) {
   const wrap = document.createElement("div");

@@ -90,54 +90,30 @@
 
       <!-- ---------- Kalender ---------- -->
       <section id="screen-kalender" class="screen" hidden>
-        <header class="screen__header">
-          <h1>Kalender</h1>
-          <p class="screen__subtitle">Woche vom 24.–30. August</p>
-        </header>
-
-        <div class="week-grid">
-          <div class="week-grid__row week-grid__row--head">
-            <div class="week-grid__slot-label"></div>
-            <div class="week-grid__day">Mo<br><span>25</span></div>
-            <div class="week-grid__day">Di<br><span>26</span></div>
-            <div class="week-grid__day">Mi<br><span>27</span></div>
-            <div class="week-grid__day">Do<br><span>28</span></div>
-            <div class="week-grid__day">Fr<br><span>29</span></div>
-            <div class="week-grid__day">Sa<br><span>30</span></div>
-            <div class="week-grid__day">So<br><span>31</span></div>
-          </div>
-          <div class="week-grid__row">
-            <div class="week-grid__slot-label">Frühstück</div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-          </div>
-          <div class="week-grid__row">
-            <div class="week-grid__slot-label">Mittag</div>
-            <div class="week-grid__cell"><span class="chip chip--blue">🍲 Platzhalter</span></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"><span class="chip chip--orange">🍛 Mealprep</span></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-          </div>
-          <div class="week-grid__row">
-            <div class="week-grid__slot-label">Abend</div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"><span class="chip chip--blue">🥗 Platzhalter</span></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-            <div class="week-grid__cell"></div>
-          </div>
+        <div class="calendar-header">
+          <button class="calendar-nav-btn" id="kalender-woche-zurueck" aria-label="Vorherige Woche">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <h1 id="kalender-monat-jahr"></h1>
+          <button class="calendar-nav-btn" id="kalender-woche-vor" aria-label="Nächste Woche">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
         </div>
+
+        <div class="week-grid" id="kalender-woche-grid"></div>
       </section>
+
+      <!-- ---------- Kalender: Eintrag-Overlay ---------- -->
+      <div id="kalender-eintrag-overlay" class="overlay" hidden>
+        <div class="overlay__backdrop" data-close-kalender-overlay="1"></div>
+        <div class="overlay__card">
+          <button class="overlay__close" data-close-kalender-overlay="1" aria-label="Schließen">✕</button>
+          <div class="overlay__icon" id="kalender-overlay-icon"></div>
+          <h2 class="overlay__title" id="kalender-overlay-name"></h2>
+          <p class="overlay__meta" id="kalender-overlay-portionen"></p>
+          <button class="btn btn--primary" id="kalender-overlay-kochmodus">Kochmodus starten</button>
+        </div>
+      </div>
 
       <!-- ---------- Rezeptsammlung ---------- -->
       <section id="screen-rezepte" class="screen" hidden>

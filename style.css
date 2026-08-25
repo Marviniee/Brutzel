@@ -379,6 +379,40 @@ button, input {
 
 /* ---------- Kalender ---------- */
 
+.calendar-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.calendar-header h1 {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.calendar-nav-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.calendar-nav-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .week-grid {
   background: var(--color-surface);
   border-radius: var(--radius-card);
@@ -405,14 +439,28 @@ button, input {
   text-align: center;
 }
 
+.week-grid__day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 .week-grid__day span {
   font-weight: 700;
   color: var(--color-text);
   font-size: 0.95rem;
 }
 
-.week-grid__day:nth-child(2) span {
-  color: var(--color-red);
+.week-grid__day.is-today span {
+  color: #fff;
+  background: var(--color-red);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .week-grid__slot-label {
@@ -423,24 +471,124 @@ button, input {
 }
 
 .week-grid__cell {
-  min-height: 56px;
-  padding: 6px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-left: 1px solid var(--color-border);
 }
 
+.week-grid__cell--empty {
+  width: 100%;
+  height: 100%;
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px dashed var(--color-border);
+}
+
 .chip {
-  font-size: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
   font-weight: 600;
-  padding: 5px 10px;
-  border-radius: var(--radius-chip);
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: none;
   white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+}
+
+.chip__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.chip__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chip--blue { background: var(--color-blue-bg); color: var(--color-blue); }
 .chip--orange { background: var(--color-orange-bg); color: var(--color-orange); }
+
+/* ---------- Overlay (Kalender-Eintrag) ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay[hidden] { display: none; }
+
+.overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.overlay__card {
+  position: relative;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-elevated);
+  padding: 32px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+
+.overlay__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-bg);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.overlay__icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+}
+
+.overlay__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.overlay__title {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.overlay__meta {
+  margin: 0 0 16px;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+}
 
 /* ---------- Rezepte ---------- */
 
