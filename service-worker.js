@@ -14,7 +14,7 @@
 // APP_BUILD in app.js mit hochzählen.
 // ============================================================================
 
-const CACHE_NAME = "brutzel-v7";
+const CACHE_NAME = "brutzel-v8";
 
 const APP_SHELL_DATEIEN = [
   "./",

@@ -10,8 +10,8 @@
 // APP_BUILD: reiner Zähler, bei JEDER Codeänderung an index.html, style.css,
 // app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
 // service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
-const APP_SEMVER = "0.6.0";
-const APP_BUILD = 7;
+const APP_SEMVER = "0.7.0";
+const APP_BUILD = 8;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -106,6 +106,130 @@ function ladeRezeptGecacht(id) {
     rezeptCache.set(id, ladeRezept(id));
   }
   return rezeptCache.get(id);
+}
+
+// ---------- GitHub-Sync (Schreibzugriff über die Contents API) ----------
+
+const GITHUB_REPO = "Marviniee/Brutzel";
+const GITHUB_TOKEN_STORAGE_KEY = "brutzel-github-token";
+
+function ladeGitHubToken() {
+  try {
+    return localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY) || "";
+  } catch (fehler) {
+    console.warn("GitHub-Token konnte nicht gelesen werden:", fehler);
+    return "";
+  }
+}
+
+function speichereGitHubToken(token) {
+  try {
+    localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, token);
+  } catch (fehler) {
+    console.warn("GitHub-Token konnte nicht gespeichert werden:", fehler);
+  }
+}
+
+function entferneGitHubToken() {
+  try {
+    localStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY);
+  } catch (fehler) {
+    console.warn("GitHub-Token konnte nicht entfernt werden:", fehler);
+  }
+}
+
+// btoa() kann nur Latin1 - bei Umlauten (ä/ö/ü/ß in Rezeptnamen) bricht ein
+// simples btoa(jsonString). Erst UTF-8-Bytes erzeugen, dann als Latin1-String
+// interpretieren, das darf btoa dann kodieren.
+function utf8ZuBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binaer = "";
+  bytes.forEach((byte) => {
+    binaer += String.fromCharCode(byte);
+  });
+  return btoa(binaer);
+}
+
+function base64ZuUtf8(base64) {
+  const binaer = atob(base64.replace(/\n/g, ""));
+  const bytes = Uint8Array.from(binaer, (zeichen) => zeichen.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+// Liest eine Datei aus dem Repo über die Contents API. Gibt { sha: null,
+// inhalt: null } zurück, wenn die Datei noch nicht existiert (kein Fehler -
+// das ist der normale Fall beim allerersten Schreiben einer neuen Datei).
+async function ladeGitHubDatei(pfad) {
+  const token = ladeGitHubToken();
+  if (!token) throw new Error("Kein GitHub-Token hinterlegt. Bitte in den Einstellungen speichern.");
+
+  let antwort;
+  try {
+    antwort = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${pfad}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    });
+  } catch (fehler) {
+    throw new Error("Netzwerkfehler beim Lesen von GitHub. Internetverbindung prüfen.");
+  }
+
+  if (antwort.status === 404) return { sha: null, inhalt: null };
+  if (antwort.status === 401) throw new Error("GitHub-Token ist ungültig oder abgelaufen.");
+  if (!antwort.ok) throw new Error(`GitHub-Anfrage fehlgeschlagen (${antwort.status}).`);
+
+  const daten = await antwort.json();
+  const inhalt = JSON.parse(base64ZuUtf8(daten.content));
+  return { sha: daten.sha, inhalt };
+}
+
+// Schreibt eine Datei im Repo (legt sie an, falls sha null ist).
+async function schreibeGitHubDatei(pfad, inhaltObjekt, commitMessage, sha) {
+  const token = ladeGitHubToken();
+  if (!token) throw new Error("Kein GitHub-Token hinterlegt. Bitte in den Einstellungen speichern.");
+
+  const body = {
+    message: commitMessage,
+    content: utf8ZuBase64(JSON.stringify(inhaltObjekt, null, 2)),
+  };
+  if (sha) body.sha = sha;
+
+  let antwort;
+  try {
+    antwort = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${pfad}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (fehler) {
+    throw new Error("Netzwerkfehler beim Schreiben nach GitHub. Internetverbindung prüfen.");
+  }
+
+  if (antwort.ok) return antwort.json();
+
+  if (antwort.status === 401) throw new Error("GitHub-Token ist ungültig oder abgelaufen.");
+  if (antwort.status === 403) throw new Error("Kein Schreibzugriff mit diesem Token (Berechtigung prüfen).");
+  if (antwort.status === 409) throw new Error("Datei wurde zwischenzeitlich geändert. Bitte erneut versuchen.");
+
+  let detail = "";
+  try {
+    detail = (await antwort.json()).message || "";
+  } catch (fehler) {
+    // kein JSON-Body, egal
+  }
+  throw new Error(`GitHub-Schreibvorgang fehlgeschlagen (${antwort.status})${detail ? `: ${detail}` : ""}.`);
+}
+
+// Liest eine JSON-Datei, wendet transformFn auf den aktuellen Inhalt an
+// (Fallback: leeres Array, falls die Datei noch nicht existiert) und
+// schreibt das Ergebnis zurück.
+async function aktualisiereGitHubJSON(pfad, transformFn, commitMessage) {
+  const { sha, inhalt } = await ladeGitHubDatei(pfad);
+  const neueDaten = transformFn(inhalt !== null ? inhalt : []);
+  await schreibeGitHubDatei(pfad, neueDaten, commitMessage, sha);
+  return neueDaten;
 }
 
 // ---------- Kalender ----------
@@ -934,14 +1058,50 @@ document.getElementById("rezept-detail-portionen-plus")?.addEventListener("click
   renderRezeptDetailZutaten();
 });
 
-document.getElementById("rezept-detail-kalender-btn")?.addEventListener("click", () => {
+document.getElementById("rezept-detail-kalender-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("rezept-detail-kalender-btn");
   const hinweis = document.getElementById("rezept-detail-kalender-hinweis");
-  if (!hinweis) return;
+  if (!btn || !hinweis || !rezeptDetailAktuellesRezept) return;
+
+  const rezept = rezeptDetailAktuellesRezept;
+  const heute = heuteISO();
+
+  btn.disabled = true;
+  hinweis.classList.remove("recipe-detail__kalender-hinweis--fehler");
+  hinweis.textContent = "Wird gespeichert …";
   hinweis.hidden = false;
-  clearTimeout(kalenderHinweisTimeout);
-  kalenderHinweisTimeout = setTimeout(() => {
-    hinweis.hidden = true;
-  }, 2500);
+
+  const neuerEintrag = {
+    id: `k-${Date.now().toString(36)}`,
+    rezept_id: rezept.id,
+    datum: heute,
+    slot: "mittag",
+    typ: rezept.typ || "normal",
+    portionen: rezept.basisportionen || 1,
+    ist_kochtag: true,
+    kochtag_id: null,
+    gesamtportionen: rezept.basisportionen || 1,
+    uebersprungen: false,
+  };
+
+  try {
+    await aktualisiereGitHubJSON(
+      "data/kalender.json",
+      (aktuelleListe) => [...aktuelleListe, neuerEintrag],
+      `Kalender: ${rezept.name} hinzufügen (${heute}, Mittag)`
+    );
+    hinweis.textContent = "Zum Kalender hinzugefügt (heute, Mittag).";
+  } catch (fehler) {
+    console.warn("Kalender-Eintrag konnte nicht gespeichert werden:", fehler);
+    hinweis.textContent = fehler.message || "Fehler beim Speichern.";
+    hinweis.classList.add("recipe-detail__kalender-hinweis--fehler");
+  } finally {
+    btn.disabled = false;
+    clearTimeout(kalenderHinweisTimeout);
+    kalenderHinweisTimeout = setTimeout(() => {
+      hinweis.hidden = true;
+    }, 4000);
+  }
 });
 
 renderRezeptDetail();
@@ -951,7 +1111,6 @@ renderRezeptDetail();
 let kochmodusRezept = null;
 let kochmodusSchrittIndex = 0;
 let technikenKarte = null;
-let kochmodusFertigTimeout = null;
 
 async function ladeTechnikenKarte() {
   if (technikenKarte) return technikenKarte;
@@ -1050,7 +1209,6 @@ async function renderKochmodusSchritt() {
   if (!kochmodusRezept) return;
 
   const schritte = kochmodusRezept.schritte || [];
-  document.getElementById("kochmodus-fertig-hinweis").hidden = true;
 
   if (schritte.length === 0) {
     labelEl.textContent = "";
@@ -1157,12 +1315,10 @@ document.getElementById("kochmodus-zurueck-btn")?.addEventListener("click", () =
 document.getElementById("kochmodus-weiter-btn")?.addEventListener("click", () => {
   const anzahl = ((kochmodusRezept && kochmodusRezept.schritte) || []).length;
   if (anzahl > 0 && kochmodusSchrittIndex === anzahl - 1) {
-    const hinweis = document.getElementById("kochmodus-fertig-hinweis");
-    hinweis.hidden = false;
-    clearTimeout(kochmodusFertigTimeout);
-    kochmodusFertigTimeout = setTimeout(() => {
-      hinweis.hidden = true;
-    }, 3000);
+    // Kein "erledigt"-Status am Kalender-Eintrag im Datenmodell (ergibt sich
+    // aus dem Datum) - "Fertig" schließt den Kochmodus also einfach, ohne
+    // etwas zu schreiben.
+    schliesseKochmodus();
     return;
   }
   kochmodusSchrittIndex += 1;
@@ -1503,3 +1659,27 @@ function renderVersion() {
 }
 
 renderVersion();
+
+function renderGitHubTokenStatus() {
+  const statusEl = document.getElementById("settings-token-status");
+  if (!statusEl) return;
+  const hatToken = Boolean(ladeGitHubToken());
+  statusEl.textContent = hatToken ? "Token hinterlegt." : "Kein Token hinterlegt.";
+  statusEl.classList.toggle("settings-token-status--ok", hatToken);
+}
+
+document.getElementById("settings-token-speichern")?.addEventListener("click", () => {
+  const input = document.getElementById("settings-token-input");
+  const wert = input.value.trim();
+  if (!wert) return;
+  speichereGitHubToken(wert);
+  input.value = "";
+  renderGitHubTokenStatus();
+});
+
+document.getElementById("settings-token-loeschen")?.addEventListener("click", () => {
+  entferneGitHubToken();
+  renderGitHubTokenStatus();
+});
+
+renderGitHubTokenStatus();

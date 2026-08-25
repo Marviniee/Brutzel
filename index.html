@@ -166,7 +166,7 @@
               <button class="btn btn--primary" data-open-kochmodus="1">Kochmodus starten</button>
               <button class="btn btn--outline" id="rezept-detail-kalender-btn">Zum Kalender hinzufügen</button>
             </div>
-            <p class="recipe-detail__kalender-hinweis" id="rezept-detail-kalender-hinweis" hidden>Kommt nach dem Sync.</p>
+            <p class="recipe-detail__kalender-hinweis" id="rezept-detail-kalender-hinweis" hidden></p>
           </div>
           <div class="recipe-detail__right">
             <h2 class="section-title">Zutaten</h2>
@@ -226,7 +226,18 @@
           <span class="version-card__value">Brutzel <span id="settings-app-semver">–</span> · Build <span id="settings-build">–</span></span>
         </div>
 
-        <p class="empty-hint">Hier kommt später u.a. der GitHub-Token für Schreibzugriffe hin.</p>
+        <div class="settings-card">
+          <h2 class="section-title">GitHub-Zugriff</h2>
+          <p class="settings-card__desc">
+            Personal Access Token mit Schreibzugriff auf <code>Marviniee/Brutzel</code>. Wird nur lokal auf diesem Gerät gespeichert, nie im Repo committet.
+          </p>
+          <p class="settings-token-status" id="settings-token-status"></p>
+          <div class="settings-token-row">
+            <input type="password" id="settings-token-input" class="search-input" placeholder="Personal Access Token" autocomplete="off" />
+            <button class="btn btn--primary" id="settings-token-speichern">Speichern</button>
+            <button class="btn btn--outline" id="settings-token-loeschen">Löschen</button>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -263,7 +274,6 @@
       <div class="kochmodus__progress"><div class="kochmodus__progress-bar" id="kochmodus-progress-bar"></div></div>
 
       <div class="kochmodus__nav" id="kochmodus-nav" hidden>
-        <p class="kochmodus__fertig-hinweis" id="kochmodus-fertig-hinweis" hidden>Kommt nach dem Sync — markiert dann automatisch als gekocht.</p>
         <button class="btn btn--outline" id="kochmodus-zurueck-btn">Zurück</button>
         <button class="btn btn--primary" id="kochmodus-weiter-btn">Weiter</button>
       </div>
