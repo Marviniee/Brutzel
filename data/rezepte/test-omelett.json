@@ -1,0 +1,23 @@
+{
+  "id": "test-omelett",
+  "name": "[TEST] Omelett",
+  "kurzbeschreibung": "Testrezept, nur zum Ausprobieren des Kalender-Sync — kann später gelöscht werden.",
+  "foto": null,
+  "icon": null,
+  "kochzeit_minuten": 10,
+  "basisportionen": 1,
+  "typ": "normal",
+  "mahlzeiten": ["mittag"],
+  "schwierigkeit": "einfach",
+  "geschmack_tags": ["herzhaft"],
+  "ernaehrungsform": ["vegetarisch"],
+  "zutaten": [
+    { "anzeige_text": "3 Eier", "menge": { "betrag": 3, "einheit": "Stück" }, "zutat_id": "ei" },
+    { "anzeige_text": "1 Prise Salz", "menge": { "betrag": 1, "einheit": "g" }, "zutat_id": "salz" }
+  ],
+  "schritte": [
+    { "nummer": 1, "text": "Eier verquirlen, salzen.", "foto": null, "technik_id": null, "zutaten_ids": ["ei", "salz"] },
+    { "nummer": 2, "text": "In der Pfanne stocken lassen.", "foto": null, "technik_id": null, "zutaten_ids": [] }
+  ],
+  "erstellt": "2026-08-25"
+}
