@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <title>Brutzel</title>
+
+  <!-- "Zum Home-Bildschirm/Dock hinzufügen" auf iPhone/iPad/Mac -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Brutzel" />
+  <meta name="theme-color" content="#FF9521" />
+
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ================= Seitenleiste ================= -->
+    <nav class="sidebar" aria-label="Hauptnavigation">
+      <div class="sidebar__logo">
+        <svg class="sidebar__logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 12.5c0-2 .6-3.6 1.9-4.4-.3-.5-.4-1-.3-1.6.2-1.3 1.4-2.2 2.7-2 .6.1 1.1.4 1.4.8.5-.7 1.3-1.2 2.2-1.2 1.5 0 2.7 1.2 2.7 2.7 0 .3 0 .5-.1.8 1.4.7 2.2 2.3 2.2 4.1v1H6v-.2Z" fill="currentColor"/>
+          <rect x="6" y="13" width="12" height="2" rx="1" fill="currentColor"/>
+          <path d="M5.5 16.5h13a1 1 0 0 1 1 1.1l-.4 2.6a1 1 0 0 1-1 .8H5.9a1 1 0 0 1-1-.8l-.4-2.6a1 1 0 0 1 1-1.1Z" fill="currentColor"/>
+        </svg>
+        <span class="sidebar__logo-text">Brutzel</span>
+      </div>
+
+      <ul class="sidebar__nav">
+        <li>
+          <button class="sidebar__nav-item is-active" data-screen="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9"/></svg>
+            <span>Home</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__nav-item" data-screen="kalender">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M3.5 9.5h17"/><path d="M8 3v4M16 3v4"/></svg>
+            <span>Kalender</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__nav-item" data-screen="rezepte">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4v16"/><path d="M5 4c0 3-2.2 4-2.2 7s2.2 4 2.2 4"/><path d="M12 4v7a2.5 2.5 0 0 1-5 0V4M9.5 4v7"/><path d="M19 4v16M19 4a3 3 0 0 0-3 3v3h6"/></svg>
+            <span>Rezepte</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__nav-item" data-screen="einkaufsliste">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h13l-1.5 9.5a2 2 0 0 1-2 1.7H8.7a2 2 0 0 1-2-1.7L5 5H3"/><circle cx="9.5" cy="21" r="1"/><circle cx="16.5" cy="21" r="1"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+            <span>Einkaufsliste</span>
+          </button>
+        </li>
+        <li>
+          <button class="sidebar__nav-item" data-screen="techniken">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.2 2"/></svg>
+            <span>Techniken</span>
+          </button>
+        </li>
+      </ul>
+
+      <div class="sidebar__footer">
+        <button class="sidebar__icon-btn" data-screen="einstellungen" aria-label="Einstellungen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.5-2-3.5-2.4.8a7.7 7.7 0 0 0-1.7-1L15 3h-6l-.3 2.8a7.7 7.7 0 0 0-1.7 1l-2.4-.8-2 3.5L4.6 11a7.6 7.6 0 0 0 0 2l-2 1.5 2 3.5 2.4-.8a7.7 7.7 0 0 0 1.7 1L9 21h6l.3-2.8a7.7 7.7 0 0 0 1.7-1l2.4.8 2-3.5-2-1.5Z"/></svg>
+        </button>
+        <button class="sidebar__icon-btn sidebar__icon-btn--profile" aria-label="Profil">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20c1.4-3.5 4.3-5.5 7.5-5.5s6.1 2 7.5 5.5"/></svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ================= Hauptbereich ================= -->
+    <main class="main">
+
+      <!-- ---------- Home ---------- -->
+      <section id="screen-home" class="screen">
+        <header class="screen__header">
+          <h1>Guten Tag, Marvin</h1>
+          <p class="screen__subtitle">Montag, 25. August</p>
+        </header>
+
+        <h2 class="section-title">Heute geplant</h2>
+        <div class="today-cards">
+          <article class="meal-card meal-card--blue">
+            <div class="meal-card__icon">🍲</div>
+            <div class="meal-card__body">
+              <span class="meal-card__slot">Mittag</span>
+              <span class="meal-card__title">Platzhalter-Gericht</span>
+            </div>
+          </article>
+          <article class="meal-card meal-card--orange">
+            <div class="meal-card__icon">🍛</div>
+            <div class="meal-card__body">
+              <span class="meal-card__slot">Abend</span>
+              <span class="meal-card__title">Mealprep-Gericht</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="tip-box">
+          <div class="tip-box__icon">💡</div>
+          <div>
+            <span class="tip-box__title">Tipp</span>
+            <p class="tip-box__text">Hier erscheinen später Vorschläge, sobald Rezepte hinterlegt sind.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Kalender ---------- -->
+      <section id="screen-kalender" class="screen" hidden>
+        <header class="screen__header">
+          <h1>Kalender</h1>
+          <p class="screen__subtitle">Woche vom 24.–30. August</p>
+        </header>
+
+        <div class="week-grid">
+          <div class="week-grid__row week-grid__row--head">
+            <div class="week-grid__slot-label"></div>
+            <div class="week-grid__day">Mo<br><span>25</span></div>
+            <div class="week-grid__day">Di<br><span>26</span></div>
+            <div class="week-grid__day">Mi<br><span>27</span></div>
+            <div class="week-grid__day">Do<br><span>28</span></div>
+            <div class="week-grid__day">Fr<br><span>29</span></div>
+            <div class="week-grid__day">Sa<br><span>30</span></div>
+            <div class="week-grid__day">So<br><span>31</span></div>
+          </div>
+          <div class="week-grid__row">
+            <div class="week-grid__slot-label">Frühstück</div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+          </div>
+          <div class="week-grid__row">
+            <div class="week-grid__slot-label">Mittag</div>
+            <div class="week-grid__cell"><span class="chip chip--blue">🍲 Platzhalter</span></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"><span class="chip chip--orange">🍛 Mealprep</span></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+          </div>
+          <div class="week-grid__row">
+            <div class="week-grid__slot-label">Abend</div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"><span class="chip chip--blue">🥗 Platzhalter</span></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+            <div class="week-grid__cell"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Rezeptsammlung ---------- -->
+      <section id="screen-rezepte" class="screen" hidden>
+        <header class="screen__header">
+          <h1>Rezepte</h1>
+        </header>
+
+        <div class="search-row">
+          <input type="search" class="search-input" placeholder="Suche nach Name oder Zutat…" disabled />
+        </div>
+
+        <div class="filter-chips">
+          <button class="filter-chip">Mealprep</button>
+          <button class="filter-chip">Mahlzeit</button>
+          <button class="filter-chip">Mittagessen</button>
+          <button class="filter-chip">Abendessen</button>
+          <button class="filter-chip">Kochzeit</button>
+          <button class="filter-chip">Geschmack</button>
+          <button class="filter-chip">Ernährungsform</button>
+        </div>
+
+        <h2 class="section-title">Vorschläge</h2>
+        <div class="recipe-grid recipe-grid--suggestions">
+          <button class="recipe-card recipe-card--placeholder" data-open-detail="1">
+            <div class="recipe-card__photo"></div>
+            <span class="recipe-card__badge">🍲</span>
+            <div class="recipe-card__body">
+              <span class="recipe-card__name">Beispielrezept</span>
+              <span class="recipe-card__meta">35 Min · 2 Portionen</span>
+            </div>
+          </button>
+        </div>
+
+        <h2 class="section-title">Alle Rezepte</h2>
+        <div class="recipe-grid">
+          <button class="recipe-card recipe-card--placeholder" data-open-detail="1">
+            <div class="recipe-card__photo"></div>
+            <span class="recipe-card__badge">🍛</span>
+            <div class="recipe-card__body">
+              <span class="recipe-card__name">Hähnchen-Curry</span>
+              <span class="recipe-card__meta">35 Min · 2 Portionen</span>
+            </div>
+          </button>
+          <div class="recipe-card recipe-card--empty">Noch keine Rezepte</div>
+          <div class="recipe-card recipe-card--empty"></div>
+        </div>
+      </section>
+
+      <!-- ---------- Rezept-Detail ---------- -->
+      <section id="screen-rezept-detail" class="screen" hidden>
+        <button class="back-btn" data-back-to="rezepte">← Zurück</button>
+        <div class="recipe-detail">
+          <div class="recipe-detail__left">
+            <div class="recipe-detail__photo"></div>
+            <h1 class="recipe-detail__title">Hähnchen-Curry</h1>
+            <p class="recipe-detail__desc">Cremiges Curry mit Kokosmilch und aromatischen Gewürzen.</p>
+            <div class="portion-stepper">
+              <button class="portion-stepper__btn">−</button>
+              <span class="portion-stepper__value">2 Portionen</span>
+              <button class="portion-stepper__btn">+</button>
+            </div>
+            <div class="recipe-detail__actions">
+              <button class="btn btn--primary" data-open-kochmodus="1">Kochmodus starten</button>
+              <button class="btn btn--secondary">Zum Kalender hinzufügen</button>
+            </div>
+          </div>
+          <div class="recipe-detail__right">
+            <h2 class="section-title">Zutaten</h2>
+            <ul class="ingredient-list">
+              <li class="ingredient-list__item">
+                <input type="checkbox" />
+                <div class="ingredient-list__thumb"></div>
+                <span class="ingredient-list__name">Hähnchenbrust</span>
+                <span class="ingredient-list__amount">500 g</span>
+              </li>
+              <li class="ingredient-list__item">
+                <input type="checkbox" />
+                <div class="ingredient-list__thumb"></div>
+                <span class="ingredient-list__name">Kokosmilch</span>
+                <span class="ingredient-list__amount">400 ml</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Einkaufsliste ---------- -->
+      <section id="screen-einkaufsliste" class="screen" hidden>
+        <header class="screen__header">
+          <h1>Einkaufsliste</h1>
+        </header>
+
+        <div class="range-picker">
+          <button class="range-picker__option is-active">Diese Woche</button>
+          <button class="range-picker__option">Freier Zeitraum</button>
+          <button class="range-picker__option">Alle künftigen Mahlzeiten</button>
+        </div>
+
+        <div class="shopping-list">
+          <div class="shopping-list__category">
+            <h2 class="section-title">Obst &amp; Gemüse</h2>
+            <p class="empty-hint">Noch keine Artikel — wird automatisch aus dem Kalender berechnet.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Techniken ---------- -->
+      <section id="screen-techniken" class="screen" hidden>
+        <header class="screen__header">
+          <h1>Techniken</h1>
+        </header>
+        <div class="technique-grid">
+          <div class="recipe-card recipe-card--empty">Noch keine Techniken hinterlegt</div>
+        </div>
+      </section>
+
+      <!-- ---------- Einstellungen ---------- -->
+      <section id="screen-einstellungen" class="screen" hidden>
+        <header class="screen__header">
+          <h1>Einstellungen</h1>
+        </header>
+        <p class="empty-hint">Hier kommt später u.a. der GitHub-Token für Schreibzugriffe hin.</p>
+      </section>
+
+    </main>
+
+    <!-- ================= Kochmodus (Vollbild) ================= -->
+    <div id="screen-kochmodus" class="kochmodus" hidden>
+      <div class="kochmodus__progress"><div class="kochmodus__progress-bar" style="width: 33%"></div></div>
+      <button class="kochmodus__close" data-close-kochmodus="1" aria-label="Kochmodus schließen">✕</button>
+
+      <div class="kochmodus__body">
+        <div class="kochmodus__step">
+          <span class="kochmodus__step-label">Schritt 1 von 3</span>
+          <p class="kochmodus__step-text">Zwiebel schälen und halbieren.</p>
+          <button class="technique-toggle">🔍 Technik: Zwiebel würfeln</button>
+        </div>
+        <div class="kochmodus__ingredients">
+          <h2 class="section-title">Für diesen Schritt</h2>
+          <ul class="ingredient-list">
+            <li class="ingredient-list__item">
+              <div class="ingredient-list__thumb"></div>
+              <span class="ingredient-list__name">Zwiebel</span>
+              <span class="ingredient-list__amount">1 Stück</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="kochmodus__overview">
+        <div class="kochmodus__overview-item is-current">1. Zwiebel schälen und halbieren.</div>
+        <div class="kochmodus__overview-item">2. Hähnchen würfeln.</div>
+        <div class="kochmodus__overview-item">3. Alles anbraten und mit Kokosmilch ablöschen.</div>
+      </div>
+
+      <div class="kochmodus__nav">
+        <button class="btn btn--secondary" data-koch-prev="1">Zurück</button>
+        <button class="btn btn--primary" data-koch-next="1">Weiter</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
