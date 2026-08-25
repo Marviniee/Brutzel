@@ -175,6 +175,37 @@
         </div>
       </section>
 
+      <!-- ---------- Rezept-Detail: "Zum Kalender hinzufügen"-Overlay ---------- -->
+      <div id="kalender-hinzufuegen-overlay" class="overlay" hidden>
+        <div class="overlay__backdrop" data-close-kalender-hinzufuegen="1"></div>
+        <div class="overlay__card overlay__card--kalender-hinzufuegen">
+          <button class="overlay__close" data-close-kalender-hinzufuegen="1" aria-label="Schließen">✕</button>
+          <h2 class="overlay__title">Zum Kalender hinzufügen</h2>
+
+          <div class="kalender-hinzufuegen__feld">
+            <label for="kalender-hinzufuegen-datum">Datum</label>
+            <input type="date" id="kalender-hinzufuegen-datum" />
+          </div>
+
+          <div class="kalender-hinzufuegen__feld">
+            <label for="kalender-hinzufuegen-slot">Slot</label>
+            <select id="kalender-hinzufuegen-slot"></select>
+          </div>
+
+          <div class="kalender-hinzufuegen__feld">
+            <label for="kalender-hinzufuegen-portionen">Portionen</label>
+            <input type="number" min="1" step="1" id="kalender-hinzufuegen-portionen" />
+          </div>
+
+          <p class="recipe-detail__kalender-hinweis" id="kalender-hinzufuegen-hinweis" hidden></p>
+
+          <div class="kalender-hinzufuegen__aktionen">
+            <button class="btn btn--outline" id="kalender-hinzufuegen-abbrechen">Abbrechen</button>
+            <button class="btn btn--primary" id="kalender-hinzufuegen-bestaetigen">Hinzufügen</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ---------- Einkaufsliste ---------- -->
       <section id="screen-einkaufsliste" class="screen" hidden>
         <header class="screen__header">

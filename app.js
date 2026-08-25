@@ -10,8 +10,8 @@
 // APP_BUILD: reiner Zähler, bei JEDER Codeänderung an index.html, style.css,
 // app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
 // service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
-const APP_SEMVER = "0.7.0";
-const APP_BUILD = 8;
+const APP_SEMVER = "0.8.0";
+const APP_BUILD = 9;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -80,7 +80,9 @@ document.querySelectorAll("[data-close-kochmodus]").forEach((btn) => {
 const SLOT_LABELS = { fruehstueck: "Frühstück", mittag: "Mittag", abend: "Abend" };
 
 async function ladeJSON(pfad) {
-  const antwort = await fetch(pfad);
+  // no-store: GitHub Pages cached data/*.json bis zu 10 Minuten - ohne das
+  // würden frisch geschriebene Änderungen verzögert sichtbar.
+  const antwort = await fetch(pfad, { cache: "no-store" });
   if (!antwort.ok) throw new Error(`${pfad}: HTTP ${antwort.status}`);
   return antwort.json();
 }
@@ -1058,13 +1060,68 @@ document.getElementById("rezept-detail-portionen-plus")?.addEventListener("click
   renderRezeptDetailZutaten();
 });
 
-document.getElementById("rezept-detail-kalender-btn")?.addEventListener("click", async () => {
-  const btn = document.getElementById("rezept-detail-kalender-btn");
-  const hinweis = document.getElementById("rezept-detail-kalender-hinweis");
-  if (!btn || !hinweis || !rezeptDetailAktuellesRezept) return;
+function formatiereDatumLesbar(iso) {
+  const datum = new Date(`${iso}T00:00:00`);
+  const text = datum.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
+function oeffneKalenderHinzufuegenOverlay() {
+  if (!rezeptDetailAktuellesRezept) return;
+
+  const datumInput = document.getElementById("kalender-hinzufuegen-datum");
+  const slotSelect = document.getElementById("kalender-hinzufuegen-slot");
+  const portionenInput = document.getElementById("kalender-hinzufuegen-portionen");
+  const hinweis = document.getElementById("kalender-hinzufuegen-hinweis");
+
+  datumInput.value = heuteISO();
+
+  slotSelect.innerHTML = "";
+  KALENDER_SLOTS.forEach((slot) => {
+    const option = document.createElement("option");
+    option.value = slot;
+    option.textContent = SLOT_LABELS[slot] || slot;
+    slotSelect.appendChild(option);
+  });
+  slotSelect.value = "mittag";
+
+  portionenInput.value = rezeptDetailAktuellePortionen;
+
+  hinweis.hidden = true;
+  hinweis.classList.remove("recipe-detail__kalender-hinweis--fehler");
+
+  document.getElementById("kalender-hinzufuegen-overlay").hidden = false;
+}
+
+function schliesseKalenderHinzufuegenOverlay() {
+  document.getElementById("kalender-hinzufuegen-overlay").hidden = true;
+}
+
+document.getElementById("rezept-detail-kalender-btn")?.addEventListener("click", oeffneKalenderHinzufuegenOverlay);
+
+document.querySelectorAll("[data-close-kalender-hinzufuegen]").forEach((el) => {
+  el.addEventListener("click", schliesseKalenderHinzufuegenOverlay);
+});
+
+document.getElementById("kalender-hinzufuegen-abbrechen")?.addEventListener("click", schliesseKalenderHinzufuegenOverlay);
+
+document.getElementById("kalender-hinzufuegen-bestaetigen")?.addEventListener("click", async () => {
   const rezept = rezeptDetailAktuellesRezept;
-  const heute = heuteISO();
+  const btn = document.getElementById("kalender-hinzufuegen-bestaetigen");
+  const hinweis = document.getElementById("kalender-hinzufuegen-hinweis");
+  if (!rezept || !btn || !hinweis) return;
+
+  const datum = document.getElementById("kalender-hinzufuegen-datum").value;
+  const slot = document.getElementById("kalender-hinzufuegen-slot").value;
+  const portionenRoh = parseInt(document.getElementById("kalender-hinzufuegen-portionen").value, 10);
+  const portionen = Number.isFinite(portionenRoh) && portionenRoh > 0 ? portionenRoh : rezept.basisportionen || 1;
+
+  if (!datum || !slot) {
+    hinweis.textContent = "Bitte Datum und Slot wählen.";
+    hinweis.classList.add("recipe-detail__kalender-hinweis--fehler");
+    hinweis.hidden = false;
+    return;
+  }
 
   btn.disabled = true;
   hinweis.classList.remove("recipe-detail__kalender-hinweis--fehler");
@@ -1074,33 +1131,47 @@ document.getElementById("rezept-detail-kalender-btn")?.addEventListener("click",
   const neuerEintrag = {
     id: `k-${Date.now().toString(36)}`,
     rezept_id: rezept.id,
-    datum: heute,
-    slot: "mittag",
+    datum,
+    slot,
     typ: rezept.typ || "normal",
-    portionen: rezept.basisportionen || 1,
+    portionen,
     ist_kochtag: true,
     kochtag_id: null,
-    gesamtportionen: rezept.basisportionen || 1,
+    gesamtportionen: portionen,
     uebersprungen: false,
   };
 
   try {
     await aktualisiereGitHubJSON(
       "data/kalender.json",
-      (aktuelleListe) => [...aktuelleListe, neuerEintrag],
-      `Kalender: ${rezept.name} hinzufügen (${heute}, Mittag)`
+      (aktuelleListe) => {
+        const belegt = aktuelleListe.some((eintrag) => eintrag.datum === datum && eintrag.slot === slot);
+        if (belegt) {
+          throw new Error(
+            `Für ${formatiereDatumLesbar(datum)} ${SLOT_LABELS[slot] || slot} ist schon etwas geplant.`
+          );
+        }
+        return [...aktuelleListe, neuerEintrag];
+      },
+      `Kalender: ${rezept.name} hinzufügen (${datum}, ${SLOT_LABELS[slot] || slot})`
     );
-    hinweis.textContent = "Zum Kalender hinzugefügt (heute, Mittag).";
+
+    schliesseKalenderHinzufuegenOverlay();
+
+    const detailHinweis = document.getElementById("rezept-detail-kalender-hinweis");
+    detailHinweis.classList.remove("recipe-detail__kalender-hinweis--fehler");
+    detailHinweis.textContent = `Zum Kalender hinzugefügt (${formatiereDatumLesbar(datum)}, ${SLOT_LABELS[slot] || slot}).`;
+    detailHinweis.hidden = false;
+    clearTimeout(kalenderHinweisTimeout);
+    kalenderHinweisTimeout = setTimeout(() => {
+      detailHinweis.hidden = true;
+    }, 4000);
   } catch (fehler) {
     console.warn("Kalender-Eintrag konnte nicht gespeichert werden:", fehler);
     hinweis.textContent = fehler.message || "Fehler beim Speichern.";
     hinweis.classList.add("recipe-detail__kalender-hinweis--fehler");
   } finally {
     btn.disabled = false;
-    clearTimeout(kalenderHinweisTimeout);
-    kalenderHinweisTimeout = setTimeout(() => {
-      hinweis.hidden = true;
-    }, 4000);
   }
 });
 
