@@ -223,36 +223,51 @@
 
     <!-- ================= Kochmodus (Vollbild) ================= -->
     <div id="screen-kochmodus" class="kochmodus" hidden>
-      <div class="kochmodus__progress"><div class="kochmodus__progress-bar" style="width: 33%"></div></div>
       <button class="kochmodus__close" data-close-kochmodus="1" aria-label="Kochmodus schließen">✕</button>
+      <div class="kochmodus__header-label" id="kochmodus-step-label"></div>
 
-      <div class="kochmodus__body">
+      <p id="kochmodus-leer-hinweis" class="empty-hint" hidden>
+        Kein Rezept ausgewählt, bitte über die Rezeptsammlung wählen.
+      </p>
+
+      <div class="kochmodus__body" id="kochmodus-inhalt" hidden>
         <div class="kochmodus__step">
-          <span class="kochmodus__step-label">Schritt 1 von 3</span>
-          <p class="kochmodus__step-text">Zwiebel schälen und halbieren.</p>
-          <button class="technique-toggle">🔍 Technik: Zwiebel würfeln</button>
+          <p class="kochmodus__step-text" id="kochmodus-step-text"></p>
+          <div class="kochmodus__step-photo" id="kochmodus-step-photo"></div>
+          <button class="technique-toggle" id="kochmodus-technik-btn" hidden></button>
         </div>
-        <div class="kochmodus__ingredients">
-          <h2 class="section-title">Für diesen Schritt</h2>
-          <ul class="ingredient-list">
-            <li class="ingredient-list__item">
-              <div class="ingredient-list__thumb"></div>
-              <span class="ingredient-list__name">Zwiebel</span>
-              <span class="ingredient-list__amount">1 Stück</span>
-            </li>
-          </ul>
+
+        <div class="kochmodus__side">
+          <div class="kochmodus__ingredients" id="kochmodus-ingredients-section" hidden>
+            <h2 class="section-title">Für diesen Schritt</h2>
+            <ul class="ingredient-list" id="kochmodus-ingredients-list"></ul>
+          </div>
+
+          <div class="kochmodus__overview">
+            <h2 class="section-title">Alle Schritte</h2>
+            <div class="kochmodus__overview-list" id="kochmodus-overview-list"></div>
+          </div>
         </div>
       </div>
 
-      <div class="kochmodus__overview">
-        <div class="kochmodus__overview-item is-current">1. Zwiebel schälen und halbieren.</div>
-        <div class="kochmodus__overview-item">2. Hähnchen würfeln.</div>
-        <div class="kochmodus__overview-item">3. Alles anbraten und mit Kokosmilch ablöschen.</div>
-      </div>
+      <div class="kochmodus__progress"><div class="kochmodus__progress-bar" id="kochmodus-progress-bar"></div></div>
 
-      <div class="kochmodus__nav">
-        <button class="btn btn--secondary" data-koch-prev="1">Zurück</button>
-        <button class="btn btn--primary" data-koch-next="1">Weiter</button>
+      <div class="kochmodus__nav" id="kochmodus-nav" hidden>
+        <p class="kochmodus__fertig-hinweis" id="kochmodus-fertig-hinweis" hidden>Kommt nach dem Sync — markiert dann automatisch als gekocht.</p>
+        <button class="btn btn--outline" id="kochmodus-zurueck-btn">Zurück</button>
+        <button class="btn btn--primary" id="kochmodus-weiter-btn">Weiter</button>
+      </div>
+    </div>
+
+    <!-- ================= Technik-Overlay ================= -->
+    <div id="technik-overlay" class="overlay" hidden>
+      <div class="overlay__backdrop" data-close-technik-overlay="1"></div>
+      <div class="overlay__card overlay__card--technik">
+        <button class="overlay__close" data-close-technik-overlay="1" aria-label="Schließen">✕</button>
+        <h2 class="overlay__title" id="technik-overlay-titel"></h2>
+        <div class="technik-overlay__bild" id="technik-overlay-bild"></div>
+        <ol class="technik-overlay__schritte" id="technik-overlay-schritte"></ol>
+        <p class="empty-hint" id="technik-overlay-leer" hidden>Noch keine Anleitung hinterlegt.</p>
       </div>
     </div>
 

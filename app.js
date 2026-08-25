@@ -10,8 +10,8 @@
 // APP_BUILD: reiner Zähler, bei JEDER Codeänderung an index.html, style.css,
 // app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
 // service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
-const APP_SEMVER = "0.4.0";
-const APP_BUILD = 5;
+const APP_SEMVER = "0.5.0";
+const APP_BUILD = 6;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -46,6 +46,9 @@ let wakeLock = null;
 
 async function oeffneKochmodus() {
   document.getElementById("screen-kochmodus").hidden = false;
+  kochmodusSchrittIndex = 0;
+  renderKochmodus();
+
   if ("wakeLock" in navigator) {
     try {
       wakeLock = await navigator.wakeLock.request("screen");
@@ -57,6 +60,7 @@ async function oeffneKochmodus() {
 
 function schliesseKochmodus() {
   document.getElementById("screen-kochmodus").hidden = true;
+  document.getElementById("technik-overlay").hidden = true;
   if (wakeLock) {
     wakeLock.release();
     wakeLock = null;
@@ -938,6 +942,276 @@ document.getElementById("rezept-detail-kalender-btn")?.addEventListener("click",
 });
 
 renderRezeptDetail();
+
+// ---------- Kochmodus ----------
+
+let kochmodusRezept = null;
+let kochmodusSchrittIndex = 0;
+let technikenKarte = null;
+let kochmodusFertigTimeout = null;
+
+async function ladeTechnikenKarte() {
+  if (technikenKarte) return technikenKarte;
+  let liste = [];
+  try {
+    liste = await ladeJSON("./data/techniken.json");
+  } catch (fehler) {
+    console.warn("Techniken-Bibliothek konnte nicht geladen werden:", fehler);
+  }
+  technikenKarte = new Map(liste.map((technik) => [technik.id, technik]));
+  return technikenKarte;
+}
+
+function humanisiereId(id) {
+  return id
+    .split("-")
+    .map((wort) => wort.charAt(0).toUpperCase() + wort.slice(1))
+    .join(" ");
+}
+
+function erstelleKochmodusZutatZeile(zutatId, zutatInfo) {
+  const li = document.createElement("li");
+  li.className = "ingredient-list__item";
+
+  const thumb = document.createElement("div");
+  thumb.className = "ingredient-list__thumb";
+
+  function zeigeFallback() {
+    thumb.innerHTML = "";
+    const fallback = document.createElement("span");
+    fallback.className = "ingredient-list__thumb-fallback";
+    fallback.textContent = "🥕";
+    thumb.appendChild(fallback);
+  }
+
+  if (zutatInfo && zutatInfo.bild) {
+    const img = document.createElement("img");
+    img.src = zutatInfo.bild;
+    img.alt = "";
+    img.addEventListener("error", zeigeFallback);
+    thumb.appendChild(img);
+  } else {
+    zeigeFallback();
+  }
+  li.appendChild(thumb);
+
+  const name = document.createElement("span");
+  name.className = "ingredient-list__name";
+  name.textContent = (zutatInfo && zutatInfo.name) || humanisiereId(zutatId);
+  li.appendChild(name);
+
+  return li;
+}
+
+function renderKochmodusOverview() {
+  const container = document.getElementById("kochmodus-overview-list");
+  if (!container || !kochmodusRezept) return;
+  container.innerHTML = "";
+
+  (kochmodusRezept.schritte || []).forEach((schritt, index) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "kochmodus__overview-item";
+    if (index === kochmodusSchrittIndex) {
+      btn.classList.add("is-current");
+    } else if (index < kochmodusSchrittIndex) {
+      btn.classList.add("is-done");
+    }
+
+    const marker = document.createElement("span");
+    marker.className = "kochmodus__overview-item__marker";
+    marker.textContent = index < kochmodusSchrittIndex ? "✓" : String(index + 1);
+
+    const text = document.createElement("span");
+    text.className = "kochmodus__overview-item__text";
+    text.textContent = schritt.text;
+
+    btn.append(marker, text);
+    btn.addEventListener("click", () => {
+      kochmodusSchrittIndex = index;
+      renderKochmodusSchritt();
+    });
+    container.appendChild(btn);
+  });
+}
+
+async function renderKochmodusSchritt() {
+  const navEl = document.getElementById("kochmodus-nav");
+  const labelEl = document.getElementById("kochmodus-step-label");
+  const textEl = document.getElementById("kochmodus-step-text");
+  const fotoEl = document.getElementById("kochmodus-step-photo");
+  const technikBtn = document.getElementById("kochmodus-technik-btn");
+  const ingredientsSection = document.getElementById("kochmodus-ingredients-section");
+  const ingredientsList = document.getElementById("kochmodus-ingredients-list");
+  const balken = document.getElementById("kochmodus-progress-bar");
+  if (!kochmodusRezept) return;
+
+  const schritte = kochmodusRezept.schritte || [];
+  document.getElementById("kochmodus-fertig-hinweis").hidden = true;
+
+  if (schritte.length === 0) {
+    labelEl.textContent = "";
+    textEl.textContent = "Für dieses Rezept sind noch keine Zubereitungsschritte hinterlegt.";
+    fotoEl.innerHTML = "";
+    technikBtn.hidden = true;
+    ingredientsSection.hidden = true;
+    document.getElementById("kochmodus-overview-list").innerHTML = "";
+    balken.style.width = "0%";
+    navEl.hidden = true;
+    return;
+  }
+
+  navEl.hidden = false;
+  const anzahl = schritte.length;
+  const schritt = schritte[kochmodusSchrittIndex];
+
+  labelEl.textContent = `Schritt ${kochmodusSchrittIndex + 1}/${anzahl}`;
+  textEl.textContent = schritt.text;
+
+  fotoEl.innerHTML = "";
+  if (schritt.foto) {
+    const img = document.createElement("img");
+    img.src = schritt.foto;
+    img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    fotoEl.appendChild(img);
+  }
+
+  if (schritt.technik_id) {
+    technikBtn.hidden = false;
+    technikBtn.dataset.technikId = schritt.technik_id;
+    const karte = await ladeTechnikenKarte();
+    const technik = karte.get(schritt.technik_id);
+    technikBtn.textContent = `ℹ️ Technik: ${technik ? technik.name : humanisiereId(schritt.technik_id)}`;
+  } else {
+    technikBtn.hidden = true;
+    delete technikBtn.dataset.technikId;
+  }
+
+  const zutatenIds = schritt.zutaten_ids || [];
+  ingredientsList.innerHTML = "";
+  if (zutatenIds.length > 0) {
+    ingredientsSection.hidden = false;
+    const zKarte = await ladeZutatenKarte();
+    zutatenIds.forEach((zid) => {
+      ingredientsList.appendChild(erstelleKochmodusZutatZeile(zid, zKarte.get(zid)));
+    });
+  } else {
+    ingredientsSection.hidden = true;
+  }
+
+  renderKochmodusOverview();
+  balken.style.width = `${((kochmodusSchrittIndex + 1) / anzahl) * 100}%`;
+
+  document.getElementById("kochmodus-zurueck-btn").disabled = kochmodusSchrittIndex === 0;
+  document.getElementById("kochmodus-weiter-btn").textContent =
+    kochmodusSchrittIndex === anzahl - 1 ? "Fertig" : "Weiter";
+}
+
+async function renderKochmodus() {
+  const leerHinweis = document.getElementById("kochmodus-leer-hinweis");
+  const inhalt = document.getElementById("kochmodus-inhalt");
+  const navEl = document.getElementById("kochmodus-nav");
+  if (!leerHinweis || !inhalt || !navEl) return;
+
+  if (!ausgewaehlteRezeptId) {
+    leerHinweis.hidden = false;
+    inhalt.hidden = true;
+    navEl.hidden = true;
+    document.getElementById("kochmodus-progress-bar").style.width = "0";
+    return;
+  }
+
+  let rezept;
+  try {
+    rezept = await ladeRezeptGecacht(ausgewaehlteRezeptId);
+  } catch (fehler) {
+    console.warn(`Rezept ${ausgewaehlteRezeptId} konnte nicht geladen werden:`, fehler);
+    leerHinweis.textContent = "Rezept konnte nicht geladen werden.";
+    leerHinweis.hidden = false;
+    inhalt.hidden = true;
+    document.getElementById("kochmodus-progress-bar").style.width = "0";
+    navEl.hidden = true;
+    return;
+  }
+
+  leerHinweis.hidden = true;
+  inhalt.hidden = false;
+
+  kochmodusRezept = rezept;
+  if (kochmodusSchrittIndex >= (rezept.schritte || []).length) kochmodusSchrittIndex = 0;
+
+  await renderKochmodusSchritt();
+}
+
+document.getElementById("kochmodus-zurueck-btn")?.addEventListener("click", () => {
+  if (kochmodusSchrittIndex > 0) {
+    kochmodusSchrittIndex -= 1;
+    renderKochmodusSchritt();
+  }
+});
+
+document.getElementById("kochmodus-weiter-btn")?.addEventListener("click", () => {
+  const anzahl = ((kochmodusRezept && kochmodusRezept.schritte) || []).length;
+  if (anzahl > 0 && kochmodusSchrittIndex === anzahl - 1) {
+    const hinweis = document.getElementById("kochmodus-fertig-hinweis");
+    hinweis.hidden = false;
+    clearTimeout(kochmodusFertigTimeout);
+    kochmodusFertigTimeout = setTimeout(() => {
+      hinweis.hidden = true;
+    }, 3000);
+    return;
+  }
+  kochmodusSchrittIndex += 1;
+  renderKochmodusSchritt();
+});
+
+document.getElementById("kochmodus-technik-btn")?.addEventListener("click", (event) => {
+  const technikId = event.currentTarget.dataset.technikId;
+  if (technikId) oeffneTechnikOverlay(technikId);
+});
+
+async function oeffneTechnikOverlay(technikId) {
+  const karte = await ladeTechnikenKarte();
+  const technik = karte.get(technikId);
+
+  document.getElementById("technik-overlay-titel").textContent = technik ? technik.name : humanisiereId(technikId);
+
+  const bildEl = document.getElementById("technik-overlay-bild");
+  bildEl.innerHTML = "";
+  if (technik && technik.bild) {
+    const img = document.createElement("img");
+    img.src = technik.bild;
+    img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    bildEl.appendChild(img);
+  }
+
+  const schritteListe = document.getElementById("technik-overlay-schritte");
+  const leerEl = document.getElementById("technik-overlay-leer");
+  schritteListe.innerHTML = "";
+
+  if (technik && Array.isArray(technik.schritte) && technik.schritte.length > 0) {
+    schritteListe.hidden = false;
+    leerEl.hidden = true;
+    technik.schritte.forEach((schrittText) => {
+      const li = document.createElement("li");
+      li.textContent = schrittText;
+      schritteListe.appendChild(li);
+    });
+  } else {
+    schritteListe.hidden = true;
+    leerEl.hidden = false;
+  }
+
+  document.getElementById("technik-overlay").hidden = false;
+}
+
+document.querySelectorAll("[data-close-technik-overlay]").forEach((el) => {
+  el.addEventListener("click", () => {
+    document.getElementById("technik-overlay").hidden = true;
+  });
+});
 
 // ---------- Einstellungen ----------
 

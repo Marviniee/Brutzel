@@ -997,27 +997,15 @@ button, input {
   display: flex;
   flex-direction: column;
   padding: 20px 40px 28px;
+  overflow-y: auto;
 }
 
 .kochmodus[hidden] { display: none; }
 
-.kochmodus__progress {
-  height: 4px;
-  background: var(--color-border);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.kochmodus__progress-bar {
-  height: 100%;
-  background: var(--color-orange);
-}
-
 .kochmodus__close {
   position: absolute;
   top: 20px;
-  right: 32px;
+  left: 32px;
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -1026,6 +1014,20 @@ button, input {
   box-shadow: var(--shadow-card);
   font-size: 1rem;
   cursor: pointer;
+  z-index: 1;
+}
+
+.kochmodus__header-label {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  min-height: 1.3em;
+  padding: 4px 0 8px;
+}
+
+#kochmodus-leer-hinweis {
+  margin-top: 24px;
+  text-align: center;
 }
 
 .kochmodus__body {
@@ -1034,21 +1036,34 @@ button, input {
   grid-template-columns: 1fr 320px;
   gap: 40px;
   align-items: start;
-  padding-top: 24px;
+  padding-top: 16px;
 }
 
-.kochmodus__step-label {
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  font-weight: 600;
-}
+.kochmodus__body[hidden] { display: none; }
 
 .kochmodus__step-text {
   font-size: 2rem;
   font-weight: 700;
   line-height: 1.25;
-  margin: 12px 0 20px;
+  margin: 0 0 16px;
   max-width: 640px;
+}
+
+.kochmodus__step-photo {
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  max-width: 640px;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(135deg, var(--color-blue-bg), var(--color-orange-bg));
+  margin-bottom: 16px;
+}
+
+.kochmodus__step-photo:empty { display: none; }
+
+.kochmodus__step-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .technique-toggle {
@@ -1061,20 +1076,58 @@ button, input {
   cursor: pointer;
 }
 
-.kochmodus__overview {
+.kochmodus__side {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 16px 0;
-  border-top: 1px solid var(--color-border);
-  margin-top: 16px;
+  gap: 24px;
+}
+
+.kochmodus__overview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .kochmodus__overview-item {
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 0.88rem;
   color: var(--color-text-secondary);
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.kochmodus__overview-item__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kochmodus__overview-item__marker {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.kochmodus__overview-item.is-done .kochmodus__overview-item__marker {
+  background: var(--color-text-secondary);
+  border-color: var(--color-text-secondary);
+  color: #fff;
 }
 
 .kochmodus__overview-item.is-current {
@@ -1083,11 +1136,80 @@ button, input {
   font-weight: 600;
 }
 
+.kochmodus__overview-item.is-current .kochmodus__overview-item__marker {
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+  color: #fff;
+}
+
+.kochmodus__progress {
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.kochmodus__progress-bar {
+  width: 0;
+  height: 100%;
+  background: var(--color-orange);
+  transition: width 0.2s ease;
+}
+
 .kochmodus__nav {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding-top: 12px;
+  padding-top: 16px;
+}
+
+.kochmodus__nav[hidden] { display: none; }
+
+.kochmodus__fertig-hinweis {
+  margin: 0 auto 0 0;
+  align-self: center;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.kochmodus__nav .btn[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- Technik-Overlay ---------- */
+
+.overlay__card--technik {
+  width: 360px;
+  text-align: left;
+  align-items: stretch;
+}
+
+.technik-overlay__bild {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-blue-bg), var(--color-orange-bg));
+  margin: 4px 0 12px;
+}
+
+.technik-overlay__bild:empty { display: none; }
+
+.technik-overlay__bild img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.technik-overlay__schritte {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.92rem;
 }
 
 /* ================= Responsive: schmalere Fenster / iPhone ================= */
