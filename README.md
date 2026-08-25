@@ -30,6 +30,7 @@ Kurzüberblick, Details je Datei in `data/`:
 | Datei | Inhalt |
 |---|---|
 | `data/rezepte/*.json` | ein File pro Rezept — Zutaten mit Menge, Zubereitungsschritte, Tags, Fotos |
+| `data/rezepte/index.json` | Liste aller Rezept-IDs — nötig, weil GitHub Pages kein Directory-Listing per `fetch` erlaubt; bei jedem neuen Rezept mit pflegen |
 | `data/kalender.json` | geplante/gekochte Mahlzeiten (Mealprep-Kochtag + verknüpfte Restportionen) |
 | `data/kochprotokoll.json` | Bewertungsverlauf pro gekochter Mahlzeit |
 | `data/zutaten.json` | wiederverwendbare Zutaten-Bibliothek (Bild + Einkaufslisten-Kategorie) |

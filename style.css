@@ -238,63 +238,141 @@ button, input {
   gap: 16px;
 }
 
-.meal-card {
-  flex: 1;
+.today-cards {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--color-surface);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  padding: 18px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
+.meal-card {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-radius: var(--radius-card);
+  padding: 32px 24px 26px;
+}
+
+.meal-card--blue { background: var(--color-blue-bg); }
+.meal-card--orange { background: var(--color-orange-bg); }
+
 .meal-card__icon {
-  font-size: 1.8rem;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.meal-card--blue .meal-card__icon { background: var(--color-blue-bg); }
-.meal-card--orange .meal-card__icon { background: var(--color-orange-bg); }
+.meal-card__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
-.meal-card__body {
+.meal-card__icon-fallback {
+  font-size: 3rem;
+}
+
+.meal-card__slot {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.meal-card__title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.today-empty {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 28px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.tip-box {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 20px 26px;
+  margin-top: 24px;
+}
+
+.tip-box__icon-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--color-orange-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tip-box__icon-circle svg {
+  width: 26px;
+  height: 26px;
+  color: var(--color-orange);
+}
+
+.tip-box__divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--color-border);
+}
+
+.tip-box__thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tip-box__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tip-box__thumb .meal-card__icon-fallback {
+  font-size: 1.7rem;
+}
+
+.tip-box__body {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.meal-card__slot {
-  font-size: 0.8rem;
+.tip-box__label {
   color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-size: 0.9rem;
 }
 
-.meal-card__title {
-  font-size: 1.05rem;
-  font-weight: 600;
+.tip-box__name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-.tip-box {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  background: var(--color-surface);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  padding: 18px;
-  margin-top: 24px;
-}
-
-.tip-box__icon { font-size: 1.4rem; }
-.tip-box__title { font-weight: 600; }
-.tip-box__text {
-  margin: 4px 0 0;
+.tip-box__sub {
   color: var(--color-text-secondary);
   font-size: 0.9rem;
 }

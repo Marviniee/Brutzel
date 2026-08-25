@@ -78,35 +78,14 @@
       <!-- ---------- Home ---------- -->
       <section id="screen-home" class="screen">
         <header class="screen__header">
-          <h1>Guten Tag, Marvin</h1>
-          <p class="screen__subtitle">Montag, 25. August</p>
+          <h1 id="home-greeting">Guten Tag, Marvin</h1>
+          <p class="screen__subtitle" id="home-date"></p>
         </header>
 
         <h2 class="section-title">Heute geplant</h2>
-        <div class="today-cards">
-          <article class="meal-card meal-card--blue">
-            <div class="meal-card__icon">🍲</div>
-            <div class="meal-card__body">
-              <span class="meal-card__slot">Mittag</span>
-              <span class="meal-card__title">Platzhalter-Gericht</span>
-            </div>
-          </article>
-          <article class="meal-card meal-card--orange">
-            <div class="meal-card__icon">🍛</div>
-            <div class="meal-card__body">
-              <span class="meal-card__slot">Abend</span>
-              <span class="meal-card__title">Mealprep-Gericht</span>
-            </div>
-          </article>
-        </div>
+        <div class="today-cards" id="home-today-cards"></div>
 
-        <div class="tip-box">
-          <div class="tip-box__icon">💡</div>
-          <div>
-            <span class="tip-box__title">Tipp</span>
-            <p class="tip-box__text">Hier erscheinen später Vorschläge, sobald Rezepte hinterlegt sind.</p>
-          </div>
-        </div>
+        <div id="home-tip-box"></div>
       </section>
 
       <!-- ---------- Kalender ---------- -->
