@@ -147,37 +147,30 @@
       <!-- ---------- Rezept-Detail ---------- -->
       <section id="screen-rezept-detail" class="screen" hidden>
         <button class="back-btn" data-back-to="rezepte">← Zurück</button>
-        <div class="recipe-detail">
+
+        <p id="rezept-detail-leer-hinweis" class="empty-hint" hidden>
+          Kein Rezept ausgewählt, bitte über die Rezeptsammlung wählen.
+        </p>
+
+        <div class="recipe-detail" id="rezept-detail-inhalt" hidden>
           <div class="recipe-detail__left">
-            <div class="recipe-detail__photo"></div>
-            <h1 class="recipe-detail__title">Hähnchen-Curry</h1>
-            <p class="recipe-detail__desc">Cremiges Curry mit Kokosmilch und aromatischen Gewürzen.</p>
+            <div class="recipe-detail__photo" id="rezept-detail-foto"></div>
+            <h1 class="recipe-detail__title" id="rezept-detail-titel"></h1>
+            <p class="recipe-detail__desc" id="rezept-detail-beschreibung"></p>
             <div class="portion-stepper">
-              <button class="portion-stepper__btn">−</button>
-              <span class="portion-stepper__value">2 Portionen</span>
-              <button class="portion-stepper__btn">+</button>
+              <button class="portion-stepper__btn" id="rezept-detail-portionen-minus">−</button>
+              <span class="portion-stepper__value"><span id="rezept-detail-portionen-wert"></span> Portionen</span>
+              <button class="portion-stepper__btn" id="rezept-detail-portionen-plus">+</button>
             </div>
             <div class="recipe-detail__actions">
               <button class="btn btn--primary" data-open-kochmodus="1">Kochmodus starten</button>
-              <button class="btn btn--secondary">Zum Kalender hinzufügen</button>
+              <button class="btn btn--outline" id="rezept-detail-kalender-btn">Zum Kalender hinzufügen</button>
             </div>
+            <p class="recipe-detail__kalender-hinweis" id="rezept-detail-kalender-hinweis" hidden>Kommt nach dem Sync.</p>
           </div>
           <div class="recipe-detail__right">
             <h2 class="section-title">Zutaten</h2>
-            <ul class="ingredient-list">
-              <li class="ingredient-list__item">
-                <input type="checkbox" />
-                <div class="ingredient-list__thumb"></div>
-                <span class="ingredient-list__name">Hähnchenbrust</span>
-                <span class="ingredient-list__amount">500 g</span>
-              </li>
-              <li class="ingredient-list__item">
-                <input type="checkbox" />
-                <div class="ingredient-list__thumb"></div>
-                <span class="ingredient-list__name">Kokosmilch</span>
-                <span class="ingredient-list__amount">400 ml</span>
-              </li>
-            </ul>
+            <ul class="ingredient-list" id="rezept-detail-zutaten"></ul>
           </div>
         </div>
       </section>

@@ -10,8 +10,8 @@
 // APP_BUILD: reiner Zähler, bei JEDER Codeänderung an index.html, style.css,
 // app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
 // service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
-const APP_SEMVER = "0.3.0";
-const APP_BUILD = 4;
+const APP_SEMVER = "0.4.0";
+const APP_BUILD = 5;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -594,6 +594,7 @@ function erstelleRezeptCard(rezept, { suggestion = false } = {}) {
   card.addEventListener("click", () => {
     ausgewaehlteRezeptId = rezept.id;
     zeigeScreen("rezept-detail");
+    renderRezeptDetail();
   });
 
   return card;
@@ -759,6 +760,184 @@ async function renderRezepteScreen() {
 document.getElementById("rezepte-suche")?.addEventListener("input", wendeRezepteFilterAn);
 
 renderRezepteScreen();
+
+// ---------- Rezept-Detail ----------
+
+let rezeptDetailAktuellesRezept = null;
+let rezeptDetailAktuellePortionen = 1;
+let zutatenKarte = null;
+let kalenderHinweisTimeout = null;
+
+async function ladeZutatenKarte() {
+  if (zutatenKarte) return zutatenKarte;
+  let liste = [];
+  try {
+    liste = await ladeJSON("./data/zutaten.json");
+  } catch (fehler) {
+    console.warn("Zutaten-Bibliothek konnte nicht geladen werden:", fehler);
+  }
+  zutatenKarte = new Map(liste.map((zutat) => [zutat.id, zutat]));
+  return zutatenKarte;
+}
+
+function formatiereMenge(betrag, einheit) {
+  let anzeigeBetrag;
+  if (einheit === "Stück") {
+    anzeigeBetrag = Math.round(betrag);
+  } else if (betrag < 10) {
+    anzeigeBetrag = Math.round(betrag * 10) / 10;
+  } else {
+    anzeigeBetrag = Math.round(betrag);
+  }
+  return `${anzeigeBetrag} ${einheit}`;
+}
+
+function skaliertesMengeText(zutat, faktor) {
+  if (!zutat.menge || typeof zutat.menge.betrag !== "number") {
+    return zutat.anzeige_text || "";
+  }
+  return formatiereMenge(zutat.menge.betrag * faktor, zutat.menge.einheit);
+}
+
+function extrahiereZutatName(zutat) {
+  if (zutat.zutat_id) {
+    return zutat.zutat_id
+      .split("-")
+      .map((wort) => wort.charAt(0).toUpperCase() + wort.slice(1))
+      .join(" ");
+  }
+  return zutat.anzeige_text || "Zutat";
+}
+
+function erstelleZutatZeile(zutat, faktor, karte) {
+  const li = document.createElement("li");
+  li.className = "ingredient-list__item";
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  li.appendChild(checkbox);
+
+  const thumb = document.createElement("div");
+  thumb.className = "ingredient-list__thumb";
+  const zutatInfo = zutat.zutat_id ? karte.get(zutat.zutat_id) : null;
+
+  function zeigeThumbFallback() {
+    thumb.innerHTML = "";
+    const fallback = document.createElement("span");
+    fallback.className = "ingredient-list__thumb-fallback";
+    fallback.textContent = "🥕";
+    thumb.appendChild(fallback);
+  }
+
+  if (zutatInfo && zutatInfo.bild) {
+    const img = document.createElement("img");
+    img.src = zutatInfo.bild;
+    img.alt = "";
+    img.addEventListener("error", zeigeThumbFallback);
+    thumb.appendChild(img);
+  } else {
+    zeigeThumbFallback();
+  }
+  li.appendChild(thumb);
+
+  const name = document.createElement("span");
+  name.className = "ingredient-list__name";
+  name.textContent = (zutatInfo && zutatInfo.name) || extrahiereZutatName(zutat);
+  li.appendChild(name);
+
+  const menge = document.createElement("span");
+  menge.className = "ingredient-list__amount";
+  menge.textContent = skaliertesMengeText(zutat, faktor);
+  li.appendChild(menge);
+
+  return li;
+}
+
+async function renderRezeptDetailZutaten() {
+  const liste = document.getElementById("rezept-detail-zutaten");
+  const portionenWertEl = document.getElementById("rezept-detail-portionen-wert");
+  if (!liste || !portionenWertEl || !rezeptDetailAktuellesRezept) return;
+
+  portionenWertEl.textContent = rezeptDetailAktuellePortionen;
+
+  const karte = await ladeZutatenKarte();
+  const basis = rezeptDetailAktuellesRezept.basisportionen || 1;
+  const faktor = rezeptDetailAktuellePortionen / basis;
+
+  liste.innerHTML = "";
+  (rezeptDetailAktuellesRezept.zutaten || []).forEach((zutat) => {
+    liste.appendChild(erstelleZutatZeile(zutat, faktor, karte));
+  });
+}
+
+async function renderRezeptDetail() {
+  const leerHinweis = document.getElementById("rezept-detail-leer-hinweis");
+  const inhalt = document.getElementById("rezept-detail-inhalt");
+  if (!leerHinweis || !inhalt) return;
+
+  if (!ausgewaehlteRezeptId) {
+    leerHinweis.hidden = false;
+    inhalt.hidden = true;
+    return;
+  }
+
+  let rezept;
+  try {
+    rezept = await ladeRezeptGecacht(ausgewaehlteRezeptId);
+  } catch (fehler) {
+    console.warn(`Rezept ${ausgewaehlteRezeptId} konnte nicht geladen werden:`, fehler);
+    leerHinweis.textContent = "Rezept konnte nicht geladen werden.";
+    leerHinweis.hidden = false;
+    inhalt.hidden = true;
+    return;
+  }
+
+  leerHinweis.hidden = true;
+  inhalt.hidden = false;
+
+  rezeptDetailAktuellesRezept = rezept;
+  rezeptDetailAktuellePortionen = rezept.basisportionen || 1;
+
+  const fotoEl = document.getElementById("rezept-detail-foto");
+  fotoEl.innerHTML = "";
+  if (rezept.foto) {
+    const img = document.createElement("img");
+    img.src = rezept.foto;
+    img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    fotoEl.appendChild(img);
+  }
+
+  document.getElementById("rezept-detail-titel").textContent = rezept.name;
+  document.getElementById("rezept-detail-beschreibung").textContent = rezept.kurzbeschreibung || "";
+  document.getElementById("rezept-detail-kalender-hinweis").hidden = true;
+
+  await renderRezeptDetailZutaten();
+}
+
+document.getElementById("rezept-detail-portionen-minus")?.addEventListener("click", () => {
+  if (rezeptDetailAktuellePortionen > 1) {
+    rezeptDetailAktuellePortionen -= 1;
+    renderRezeptDetailZutaten();
+  }
+});
+
+document.getElementById("rezept-detail-portionen-plus")?.addEventListener("click", () => {
+  rezeptDetailAktuellePortionen += 1;
+  renderRezeptDetailZutaten();
+});
+
+document.getElementById("rezept-detail-kalender-btn")?.addEventListener("click", () => {
+  const hinweis = document.getElementById("rezept-detail-kalender-hinweis");
+  if (!hinweis) return;
+  hinweis.hidden = false;
+  clearTimeout(kalenderHinweisTimeout);
+  kalenderHinweisTimeout = setTimeout(() => {
+    hinweis.hidden = true;
+  }, 2500);
+});
+
+renderRezeptDetail();
 
 // ---------- Einstellungen ----------
 
