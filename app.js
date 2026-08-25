@@ -1,11 +1,17 @@
 // ============================================================================
 // app.js — Brutzel
-//
-// Diese erste Version kümmert sich nur um die Grundnavigation zwischen den
-// Platzhalter-Screens (Sidebar + Rezept-Detail + Kochmodus). Die eigentliche
-// Fach-Logik (Kalender, Zutaten-Aggregation, GitHub-Sync, …) kommt in den
-// nächsten Sessions dazu.
 // ============================================================================
+
+// Zwei getrennte Versionsangaben, beide sichtbar im Einstellungen-Screen.
+//
+// APP_SEMVER: die "echte" Versionsnummer, von Hand gepflegt. Nur bei
+// spürbaren, sichtbaren Funktions-Updates hochzählen (z.B. "0.1.0" -> "0.2.0").
+//
+// APP_BUILD: reiner Zähler, bei JEDER Codeänderung an index.html, style.css,
+// app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
+// service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
+const APP_SEMVER = "0.1.0";
+const APP_BUILD = 2;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -285,3 +291,14 @@ function renderBegruessungsdatum() {
 renderBegruessungsdatum();
 renderHeuteGeplant();
 renderTipp();
+
+// ---------- Einstellungen ----------
+
+function renderVersion() {
+  const semverEl = document.getElementById("settings-app-semver");
+  const buildEl = document.getElementById("settings-build");
+  if (semverEl) semverEl.textContent = APP_SEMVER;
+  if (buildEl) buildEl.textContent = APP_BUILD;
+}
+
+renderVersion();

@@ -5,11 +5,16 @@
 // installierbar machen ("Zum Home-Bildschirm/Dock hinzufügen"), und cached
 // den App-Shell für den Offline-Start.
 //
-// CACHE_NAME hochzählen (z.B. "v2"), wenn App-Shell-Dateien geändert wurden
-// und installierte Nutzer die neue Version bekommen sollen.
+// PFLICHT-REGEL, keine Ausnahme: bei JEDER Änderung an index.html,
+// style.css, app.js oder manifest.json MUSS CACHE_NAME hier hochgezählt
+// werden (z.B. "brutzel-v2" -> "brutzel-v3"). Diese Datei selbst ändert
+// sich sonst nicht, der Browser erkennt also gar kein Update und liefert
+// installierten Nutzern dauerhaft die alte gecachte Version aus — auch
+// wenn GitHub Pages längst den neuen Stand ausliefert. Im selben Zug
+// APP_BUILD in app.js mit hochzählen.
 // ============================================================================
 
-const CACHE_NAME = "brutzel-v1";
+const CACHE_NAME = "brutzel-v2";
 
 const APP_SHELL_DATEIEN = [
   "./",

@@ -690,6 +690,30 @@ button, input {
   gap: 16px;
 }
 
+/* ---------- Einstellungen ---------- */
+
+.version-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+
+.version-card__label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.version-card__value {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 /* ================= Kochmodus (Vollbild) ================= */
 
 .kochmodus {
