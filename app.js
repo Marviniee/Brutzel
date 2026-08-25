@@ -10,8 +10,8 @@
 // APP_BUILD: reiner Zähler, bei JEDER Codeänderung an index.html, style.css,
 // app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
 // service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
-const APP_SEMVER = "0.2.0";
-const APP_BUILD = 3;
+const APP_SEMVER = "0.3.0";
+const APP_BUILD = 4;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -34,10 +34,6 @@ function zeigeScreen(name) {
 
 document.querySelectorAll("[data-screen]").forEach((btn) => {
   btn.addEventListener("click", () => zeigeScreen(btn.dataset.screen));
-});
-
-document.querySelectorAll("[data-open-detail]").forEach((btn) => {
-  btn.addEventListener("click", () => zeigeScreen("rezept-detail"));
 });
 
 document.querySelectorAll("[data-back-to]").forEach((btn) => {
@@ -489,6 +485,280 @@ function renderBegruessungsdatum() {
 renderBegruessungsdatum();
 renderHeuteGeplant();
 renderTipp();
+
+// ---------- Rezepte ----------
+
+// Freundliche Labels für Filter-Chip-Werte. Werte ohne Eintrag hier werden
+// mit großem Anfangsbuchstaben angezeigt (siehe labelFuerFilterwert).
+const REZEPTE_FILTER_LABELS = {
+  typ: { mealprep: "Mealprep", normal: "Normal" },
+  mahlzeit: SLOT_LABELS,
+  schwierigkeit: { leicht: "Leicht", mittel: "Mittel", schwer: "Schwer" },
+};
+
+// Kategorien für die Filter-Chip-Zeile: key = Zustandsfeld in
+// rezepteFilterState, feld = Rezept-Eigenschaft, mehrfach = ob die
+// Eigenschaft ein Array ist (mehrere Werte pro Rezept) oder ein einzelner
+// String.
+const REZEPTE_FILTER_KATEGORIEN = [
+  { key: "typ", feld: "typ", mehrfach: false },
+  { key: "mahlzeit", feld: "mahlzeiten", mehrfach: true },
+  { key: "schwierigkeit", feld: "schwierigkeit", mehrfach: false },
+  { key: "geschmack", feld: "geschmack_tags", mehrfach: true },
+  { key: "ernaehrungsform", feld: "ernaehrungsform", mehrfach: true },
+];
+
+let alleRezepte = [];
+let rezepteProtokoll = [];
+let ausgewaehlteRezeptId = null;
+
+const rezepteFilterState = {
+  typ: new Set(),
+  mahlzeit: new Set(),
+  schwierigkeit: new Set(),
+  geschmack: new Set(),
+  ernaehrungsform: new Set(),
+};
+
+function labelFuerFilterwert(kategorie, wert) {
+  const karte = REZEPTE_FILTER_LABELS[kategorie];
+  if (karte && karte[wert]) return karte[wert];
+  return wert.charAt(0).toUpperCase() + wert.slice(1);
+}
+
+function erstelleMetaZeile(rezept) {
+  const meta = document.createElement("div");
+  meta.className = "recipe-card__meta";
+
+  const teile = [];
+  if (rezept.kochzeit_minuten != null) {
+    teile.push({
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+      text: `${rezept.kochzeit_minuten} Min`,
+    });
+  }
+  if (rezept.basisportionen != null) {
+    teile.push({
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c1-3 3-4.5 5.5-4.5s4.5 1.5 5.5 4.5"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 14.2c1.8.4 3 1.7 3.7 3.8"/></svg>',
+      text: `${rezept.basisportionen} Portionen`,
+    });
+  }
+
+  teile.forEach((teil, i) => {
+    if (i > 0) meta.appendChild(document.createTextNode(" · "));
+    const span = document.createElement("span");
+    span.className = "recipe-card__meta-item";
+    span.innerHTML = `${teil.icon}${teil.text}`;
+    meta.appendChild(span);
+  });
+
+  return meta;
+}
+
+function erstelleRezeptCard(rezept, { suggestion = false } = {}) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = suggestion ? "recipe-card recipe-card--suggestion" : "recipe-card";
+
+  const photo = document.createElement("div");
+  photo.className = "recipe-card__photo";
+  if (rezept.foto) {
+    const img = document.createElement("img");
+    img.src = rezept.foto;
+    img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    photo.appendChild(img);
+  }
+
+  const badge = document.createElement("span");
+  badge.className = "recipe-card__badge";
+  if (rezept.icon) {
+    const img = document.createElement("img");
+    img.src = rezept.icon;
+    img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    badge.appendChild(img);
+  }
+  photo.appendChild(badge);
+
+  const body = document.createElement("div");
+  body.className = "recipe-card__body";
+
+  const name = document.createElement("span");
+  name.className = "recipe-card__name";
+  name.textContent = rezept.name;
+
+  body.append(name, erstelleMetaZeile(rezept));
+  card.append(photo, body);
+
+  card.addEventListener("click", () => {
+    ausgewaehlteRezeptId = rezept.id;
+    zeigeScreen("rezept-detail");
+  });
+
+  return card;
+}
+
+function rezeptPasstZuSuche(rezept, query) {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  if (rezept.name && rezept.name.toLowerCase().includes(q)) return true;
+  return (rezept.zutaten || []).some((zutat) => (zutat.anzeige_text || "").toLowerCase().includes(q));
+}
+
+function rezeptPasstZuFiltern(rezept) {
+  return REZEPTE_FILTER_KATEGORIEN.every(({ key, feld, mehrfach }) => {
+    const ausgewaehlt = rezepteFilterState[key];
+    if (ausgewaehlt.size === 0) return true;
+    if (mehrfach) {
+      return (rezept[feld] || []).some((wert) => ausgewaehlt.has(wert));
+    }
+    return ausgewaehlt.has(rezept[feld]);
+  });
+}
+
+function renderRezeptGrid(rezepte) {
+  const grid = document.getElementById("rezepte-alle-grid");
+  const keineTreffer = document.getElementById("rezepte-keine-treffer");
+  if (!grid || !keineTreffer) return;
+  grid.innerHTML = "";
+
+  if (rezepte.length === 0) {
+    keineTreffer.hidden = false;
+    return;
+  }
+  keineTreffer.hidden = true;
+  rezepte.forEach((rezept) => grid.appendChild(erstelleRezeptCard(rezept)));
+}
+
+function wendeRezepteFilterAn() {
+  const sucheEl = document.getElementById("rezepte-suche");
+  const query = sucheEl ? sucheEl.value.trim() : "";
+  const gefiltert = alleRezepte.filter(
+    (rezept) => rezeptPasstZuSuche(rezept, query) && rezeptPasstZuFiltern(rezept)
+  );
+  renderRezeptGrid(gefiltert);
+}
+
+function renderRezepteFilterChips() {
+  const container = document.getElementById("rezepte-filter-chips");
+  if (!container) return;
+  container.innerHTML = "";
+
+  REZEPTE_FILTER_KATEGORIEN.forEach(({ key, feld, mehrfach }) => {
+    const werte = mehrfach
+      ? [...new Set(alleRezepte.flatMap((rezept) => rezept[feld] || []))]
+      : [...new Set(alleRezepte.map((rezept) => rezept[feld]).filter(Boolean))];
+
+    werte.forEach((wert) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "filter-chip";
+      chip.textContent = labelFuerFilterwert(key, wert);
+      chip.addEventListener("click", () => {
+        const ausgewaehlt = rezepteFilterState[key];
+        if (ausgewaehlt.has(wert)) {
+          ausgewaehlt.delete(wert);
+        } else {
+          ausgewaehlt.add(wert);
+        }
+        chip.classList.toggle("is-active");
+        wendeRezepteFilterAn();
+      });
+      container.appendChild(chip);
+    });
+  });
+}
+
+// Gleiche Logik wie die Tipp-Box auf Home (längste Zeit nicht gekocht,
+// positive Bewertung als Tiebreaker), hier aber als Liste statt Einzeltreffer.
+function berechneKochVorschlaege(rezepte, protokoll, anzahl) {
+  const heute = new Date();
+
+  const bewertet = rezepte.map((rezept) => {
+    const eintraege = protokoll.filter((p) => p.rezept_id === rezept.id);
+    let letztesDatum = null;
+    eintraege.forEach((eintrag) => {
+      const datum = new Date(eintrag.datum);
+      if (!letztesDatum || datum > letztesDatum) letztesDatum = datum;
+    });
+    const tageSeit = letztesDatum ? Math.round((heute - letztesDatum) / 86400000) : Infinity;
+    const positiv = eintraege.filter((e) => e.bewertung === "positiv").length;
+    const negativ = eintraege.filter((e) => e.bewertung === "negativ").length;
+    const positivQuote = positiv + negativ > 0 ? positiv / (positiv + negativ) : 0.5;
+    return { rezept, tageSeit, positivQuote };
+  });
+
+  bewertet.sort((a, b) => b.tageSeit - a.tageSeit || b.positivQuote - a.positivQuote);
+  return bewertet.slice(0, anzahl).map((b) => b.rezept);
+}
+
+function renderRezepteVorschlaege() {
+  const section = document.getElementById("rezepte-vorschlaege-section");
+  const grid = document.getElementById("rezepte-vorschlaege-grid");
+  if (!section || !grid) return;
+  grid.innerHTML = "";
+
+  const vorschlaege = berechneKochVorschlaege(alleRezepte, rezepteProtokoll, Math.min(4, alleRezepte.length));
+  if (vorschlaege.length === 0) {
+    section.hidden = true;
+    return;
+  }
+  section.hidden = false;
+  vorschlaege.forEach((rezept) => grid.appendChild(erstelleRezeptCard(rezept, { suggestion: true })));
+}
+
+async function renderRezepteScreen() {
+  const leerHinweis = document.getElementById("rezepte-leer-hinweis");
+  const inhalt = document.getElementById("rezepte-inhalt");
+  if (!leerHinweis || !inhalt) return;
+
+  let ids = [];
+  try {
+    ids = await ladeJSON("./data/rezepte/index.json");
+  } catch (fehler) {
+    console.warn("Rezept-Index konnte nicht geladen werden:", fehler);
+  }
+
+  alleRezepte = ids.length
+    ? (
+        await Promise.all(
+          ids.map(async (id) => {
+            try {
+              return await ladeRezeptGecacht(id);
+            } catch (fehler) {
+              console.warn(`Rezept ${id} konnte nicht geladen werden:`, fehler);
+              return null;
+            }
+          })
+        )
+      ).filter(Boolean)
+    : [];
+
+  if (alleRezepte.length === 0) {
+    leerHinweis.hidden = false;
+    inhalt.hidden = true;
+    return;
+  }
+
+  leerHinweis.hidden = true;
+  inhalt.hidden = false;
+
+  try {
+    rezepteProtokoll = await ladeJSON("./data/kochprotokoll.json");
+  } catch (fehler) {
+    console.warn("Kochprotokoll konnte nicht geladen werden:", fehler);
+    rezepteProtokoll = [];
+  }
+
+  renderRezepteFilterChips();
+  renderRezepteVorschlaege();
+  wendeRezepteFilterAn();
+}
+
+document.getElementById("rezepte-suche")?.addEventListener("input", wendeRezepteFilterAn);
+
+renderRezepteScreen();
 
 // ---------- Einstellungen ----------
 

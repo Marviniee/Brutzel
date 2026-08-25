@@ -121,44 +121,26 @@
           <h1>Rezepte</h1>
         </header>
 
-        <div class="search-row">
-          <input type="search" class="search-input" placeholder="Suche nach Name oder Zutat…" disabled />
-        </div>
+        <p id="rezepte-leer-hinweis" class="empty-hint" hidden>Noch keine Rezepte vorhanden.</p>
 
-        <div class="filter-chips">
-          <button class="filter-chip">Mealprep</button>
-          <button class="filter-chip">Mahlzeit</button>
-          <button class="filter-chip">Mittagessen</button>
-          <button class="filter-chip">Abendessen</button>
-          <button class="filter-chip">Kochzeit</button>
-          <button class="filter-chip">Geschmack</button>
-          <button class="filter-chip">Ernährungsform</button>
-        </div>
-
-        <h2 class="section-title">Vorschläge</h2>
-        <div class="recipe-grid recipe-grid--suggestions">
-          <button class="recipe-card recipe-card--placeholder" data-open-detail="1">
-            <div class="recipe-card__photo"></div>
-            <span class="recipe-card__badge">🍲</span>
-            <div class="recipe-card__body">
-              <span class="recipe-card__name">Beispielrezept</span>
-              <span class="recipe-card__meta">35 Min · 2 Portionen</span>
+        <div id="rezepte-inhalt" hidden>
+          <div class="search-row">
+            <div class="search-box">
+              <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+              <input type="search" id="rezepte-suche" class="search-input search-input--icon" placeholder="Suche nach Name oder Zutat…" />
             </div>
-          </button>
-        </div>
+          </div>
 
-        <h2 class="section-title">Alle Rezepte</h2>
-        <div class="recipe-grid">
-          <button class="recipe-card recipe-card--placeholder" data-open-detail="1">
-            <div class="recipe-card__photo"></div>
-            <span class="recipe-card__badge">🍛</span>
-            <div class="recipe-card__body">
-              <span class="recipe-card__name">Hähnchen-Curry</span>
-              <span class="recipe-card__meta">35 Min · 2 Portionen</span>
-            </div>
-          </button>
-          <div class="recipe-card recipe-card--empty">Noch keine Rezepte</div>
-          <div class="recipe-card recipe-card--empty"></div>
+          <div class="filter-chips" id="rezepte-filter-chips"></div>
+
+          <div id="rezepte-vorschlaege-section">
+            <h2 class="section-title">Vorschläge</h2>
+            <div class="recipe-grid recipe-grid--suggestions" id="rezepte-vorschlaege-grid"></div>
+          </div>
+
+          <h2 class="section-title">Alle Rezepte</h2>
+          <div class="recipe-grid" id="rezepte-alle-grid"></div>
+          <p id="rezepte-keine-treffer" class="empty-hint" hidden>Keine Rezepte gefunden.</p>
         </div>
       </section>
 
