@@ -55,3 +55,6 @@ python3 -m http.server 8123
 ```
 
 Dann `http://localhost:8123` öffnen. Auf iPad/iPhone/Mac lässt sich die Seite über "Zum Home-Bildschirm/Dock hinzufügen" als eigenständige App installieren.
+
+## Live unter
+https://marviniee.github.io/Brutzel/
