@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "k-mt9pbjug",
+    "rezept_id": "test-omelett",
+    "datum": "2026-08-26",
+    "slot": "abend",
+    "typ": "normal",
+    "portionen": 1,
+    "ist_kochtag": true,
+    "kochtag_id": null,
+    "gesamtportionen": 1,
+    "uebersprungen": false
+  }
+]
