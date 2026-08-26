@@ -1,14 +1,1 @@
-[
-  {
-    "id": "k-mt90edcb",
-    "rezept_id": "test-omelett",
-    "datum": "2026-08-25",
-    "slot": "fruehstueck",
-    "typ": "normal",
-    "portionen": 6,
-    "ist_kochtag": true,
-    "kochtag_id": null,
-    "gesamtportionen": 6,
-    "uebersprungen": false
-  }
-]
+[]

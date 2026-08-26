@@ -11,7 +11,7 @@
 // app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
 // service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
 const APP_SEMVER = "0.8.0";
-const APP_BUILD = 9;
+const APP_BUILD = 10;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -1582,7 +1582,7 @@ async function aggregiereEinkaufsliste(eintraege) {
         gruppen.set(schluessel, {
           schluessel,
           zutatId: zutat.zutat_id || null,
-          fallbackName: zutat.anzeige_text || zutatSchluessel,
+          fallbackName: extrahiereZutatName(zutat),
           dimension: dim.dimension,
           ursprungsEinheit: zutat.menge.einheit,
           summeBasis: 0,
