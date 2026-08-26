@@ -108,10 +108,15 @@
         <div class="overlay__backdrop" data-close-kalender-overlay="1"></div>
         <div class="overlay__card">
           <button class="overlay__close" data-close-kalender-overlay="1" aria-label="Schließen">✕</button>
+          <div class="overlay__photo" id="kalender-overlay-foto"></div>
           <div class="overlay__icon" id="kalender-overlay-icon"></div>
           <h2 class="overlay__title" id="kalender-overlay-name"></h2>
           <p class="overlay__meta" id="kalender-overlay-portionen"></p>
-          <button class="btn btn--primary" id="kalender-overlay-kochmodus">Kochmodus starten</button>
+          <p class="recipe-detail__kalender-hinweis" id="kalender-overlay-hinweis" hidden></p>
+          <div class="kalender-overlay__aktionen">
+            <button class="btn btn--primary" id="kalender-overlay-kochmodus">Kochmodus starten</button>
+            <button class="btn btn--outline btn--danger" id="kalender-overlay-loeschen">Eintrag löschen</button>
+          </div>
         </div>
       </div>
 

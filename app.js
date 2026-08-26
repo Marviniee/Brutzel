@@ -10,8 +10,8 @@
 // APP_BUILD: reiner Zähler, bei JEDER Codeänderung an index.html, style.css,
 // app.js oder manifest.json hochzählen — siehe Pflicht-Regel oben in
 // service-worker.js (CACHE_NAME muss im selben Zug mitgezogen werden).
-const APP_SEMVER = "0.8.0";
-const APP_BUILD = 10;
+const APP_SEMVER = "0.9.0";
+const APP_BUILD = 11;
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -234,6 +234,37 @@ async function aktualisiereGitHubJSON(pfad, transformFn, commitMessage) {
   return neueDaten;
 }
 
+// data/kalender.json ändert sich am häufigsten. GitHub Pages braucht nach
+// jedem Commit eine eigene Build-/Deploy-Zeit (unabhängig vom Browser-
+// Cache), wodurch ladeJSON() über die Pages-URL kurz nach einem eigenen
+// Schreibvorgang noch den alten Stand liefern kann. Mit Token deshalb über
+// die Contents API lesen (api.github.com spiegelt den Commit sofort),
+// ohne Token oder bei API-Fehlern Fallback auf die bisherige Pages-URL.
+// Ergebnis wird für die Dauer der Session gecacht - eigene Schreibvorgänge
+// aktualisieren den Cache direkt (siehe kalenderCache-Zuweisungen unten),
+// statt auf einen Re-Fetch zu warten ("optimistisches Update").
+let kalenderCache = null;
+
+async function ladeKalenderDaten() {
+  if (kalenderCache !== null) return kalenderCache;
+
+  let daten;
+  if (ladeGitHubToken()) {
+    try {
+      const { inhalt } = await ladeGitHubDatei("data/kalender.json");
+      daten = inhalt !== null ? inhalt : [];
+    } catch (fehler) {
+      console.warn("Kalender konnte nicht über die GitHub-API gelesen werden, Fallback auf Pages-URL:", fehler);
+      daten = await ladeJSON("./data/kalender.json");
+    }
+  } else {
+    daten = await ladeJSON("./data/kalender.json");
+  }
+
+  kalenderCache = daten;
+  return kalenderCache;
+}
+
 // ---------- Kalender ----------
 
 // Reihenfolge + Konfiguration der Kalender-Zeilen. Später um weitere Slots
@@ -321,7 +352,7 @@ async function renderKalenderWoche() {
 
   let kalender = [];
   try {
-    kalender = await ladeJSON("./data/kalender.json");
+    kalender = await ladeKalenderDaten();
   } catch (fehler) {
     console.warn("Kalender konnte nicht geladen werden:", fehler);
   }
@@ -375,6 +406,16 @@ async function renderKalenderWoche() {
 function oeffneKalenderOverlay(eintrag, rezept) {
   aktuellerKalenderEintrag = eintrag;
 
+  const fotoEl = document.getElementById("kalender-overlay-foto");
+  fotoEl.innerHTML = "";
+  if (rezept.foto) {
+    const foto = document.createElement("img");
+    foto.src = rezept.foto;
+    foto.alt = "";
+    foto.addEventListener("error", () => foto.remove());
+    fotoEl.appendChild(foto);
+  }
+
   const iconEl = document.getElementById("kalender-overlay-icon");
   iconEl.innerHTML = "";
   if (rezept.icon) {
@@ -389,6 +430,12 @@ function oeffneKalenderOverlay(eintrag, rezept) {
   document.getElementById("kalender-overlay-portionen").textContent = eintrag.portionen
     ? `${eintrag.portionen} Portionen`
     : "";
+
+  const hinweis = document.getElementById("kalender-overlay-hinweis");
+  hinweis.hidden = true;
+  hinweis.classList.remove("recipe-detail__kalender-hinweis--fehler");
+  document.getElementById("kalender-overlay-loeschen").disabled = false;
+
   document.getElementById("kalender-eintrag-overlay").hidden = false;
 }
 
@@ -409,6 +456,38 @@ document.getElementById("kalender-overlay-kochmodus").addEventListener("click", 
   oeffneKochmodus();
 });
 
+document.getElementById("kalender-overlay-loeschen").addEventListener("click", async () => {
+  if (!aktuellerKalenderEintrag) return;
+  const eintrag = aktuellerKalenderEintrag;
+
+  const bestaetigt = confirm("Diesen Kalender-Eintrag wirklich löschen?");
+  if (!bestaetigt) return;
+
+  const btn = document.getElementById("kalender-overlay-loeschen");
+  const hinweis = document.getElementById("kalender-overlay-hinweis");
+
+  btn.disabled = true;
+  hinweis.classList.remove("recipe-detail__kalender-hinweis--fehler");
+  hinweis.textContent = "Wird gelöscht …";
+  hinweis.hidden = false;
+
+  try {
+    const neueDaten = await aktualisiereGitHubJSON(
+      "data/kalender.json",
+      (aktuelleListe) => aktuelleListe.filter((e) => e.id !== eintrag.id),
+      `Kalender: Eintrag entfernen (${eintrag.datum}, ${SLOT_LABELS[eintrag.slot] || eintrag.slot})`
+    );
+    kalenderCache = neueDaten;
+    schliesseKalenderOverlay();
+    renderKalenderWoche();
+  } catch (fehler) {
+    console.warn("Kalender-Eintrag konnte nicht gelöscht werden:", fehler);
+    hinweis.textContent = fehler.message || "Fehler beim Löschen.";
+    hinweis.classList.add("recipe-detail__kalender-hinweis--fehler");
+    btn.disabled = false;
+  }
+});
+
 document.getElementById("kalender-woche-zurueck").addEventListener("click", () => {
   kalenderWochenStart.setDate(kalenderWochenStart.getDate() - 7);
   renderKalenderWoche();
@@ -417,6 +496,14 @@ document.getElementById("kalender-woche-zurueck").addEventListener("click", () =
 document.getElementById("kalender-woche-vor").addEventListener("click", () => {
   kalenderWochenStart.setDate(kalenderWochenStart.getDate() + 7);
   renderKalenderWoche();
+});
+
+// Kalender-Screen beim Tab-Wechsel neu rendern (nicht nur bei Wochenwechsel),
+// damit optimistische Updates aus anderen Screens (z.B. "Zum Kalender
+// hinzufügen" im Rezept-Detail) sofort sichtbar sind, statt dass die alte
+// Grid-Ansicht bis zum nächsten Wochenwechsel stehen bleibt.
+document.querySelectorAll('[data-screen="kalender"]').forEach((btn) => {
+  btn.addEventListener("click", renderKalenderWoche);
 });
 
 renderKalenderWoche();
@@ -472,7 +559,7 @@ async function renderHeuteGeplant() {
 
   let kalender = [];
   try {
-    kalender = await ladeJSON("./data/kalender.json");
+    kalender = await ladeKalenderDaten();
   } catch (fehler) {
     console.warn("Kalender konnte nicht geladen werden:", fehler);
   }
@@ -1066,13 +1153,38 @@ function formatiereDatumLesbar(iso) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function oeffneKalenderHinzufuegenOverlay() {
+// Zuletzt geladene Kalender-Daten für die Live-Dopplungs-Prüfung im
+// "Zum Kalender hinzufügen"-Overlay (bei jedem Öffnen neu geladen).
+let kalenderHinzufuegenDaten = [];
+
+function pruefeKalenderHinzufuegenDopplung() {
+  const datum = document.getElementById("kalender-hinzufuegen-datum").value;
+  const slot = document.getElementById("kalender-hinzufuegen-slot").value;
+  const hinweis = document.getElementById("kalender-hinzufuegen-hinweis");
+  const bestaetigenBtn = document.getElementById("kalender-hinzufuegen-bestaetigen");
+
+  const belegt = kalenderHinzufuegenDaten.some((eintrag) => eintrag.datum === datum && eintrag.slot === slot);
+
+  if (belegt) {
+    hinweis.textContent = `Für ${formatiereDatumLesbar(datum)} ${SLOT_LABELS[slot] || slot} ist bereits etwas geplant.`;
+    hinweis.classList.add("recipe-detail__kalender-hinweis--fehler");
+    hinweis.hidden = false;
+  } else {
+    hinweis.hidden = true;
+    hinweis.classList.remove("recipe-detail__kalender-hinweis--fehler");
+  }
+  bestaetigenBtn.disabled = belegt;
+  return belegt;
+}
+
+async function oeffneKalenderHinzufuegenOverlay() {
   if (!rezeptDetailAktuellesRezept) return;
 
   const datumInput = document.getElementById("kalender-hinzufuegen-datum");
   const slotSelect = document.getElementById("kalender-hinzufuegen-slot");
   const portionenInput = document.getElementById("kalender-hinzufuegen-portionen");
   const hinweis = document.getElementById("kalender-hinzufuegen-hinweis");
+  const bestaetigenBtn = document.getElementById("kalender-hinzufuegen-bestaetigen");
 
   datumInput.value = heuteISO();
 
@@ -1089,8 +1201,17 @@ function oeffneKalenderHinzufuegenOverlay() {
 
   hinweis.hidden = true;
   hinweis.classList.remove("recipe-detail__kalender-hinweis--fehler");
+  bestaetigenBtn.disabled = false;
 
   document.getElementById("kalender-hinzufuegen-overlay").hidden = false;
+
+  try {
+    kalenderHinzufuegenDaten = await ladeKalenderDaten();
+  } catch (fehler) {
+    console.warn("Kalender konnte für die Dopplungs-Prüfung nicht geladen werden:", fehler);
+    kalenderHinzufuegenDaten = [];
+  }
+  pruefeKalenderHinzufuegenDopplung();
 }
 
 function schliesseKalenderHinzufuegenOverlay() {
@@ -1098,6 +1219,9 @@ function schliesseKalenderHinzufuegenOverlay() {
 }
 
 document.getElementById("rezept-detail-kalender-btn")?.addEventListener("click", oeffneKalenderHinzufuegenOverlay);
+
+document.getElementById("kalender-hinzufuegen-datum")?.addEventListener("change", pruefeKalenderHinzufuegenDopplung);
+document.getElementById("kalender-hinzufuegen-slot")?.addEventListener("change", pruefeKalenderHinzufuegenDopplung);
 
 document.querySelectorAll("[data-close-kalender-hinzufuegen]").forEach((el) => {
   el.addEventListener("click", schliesseKalenderHinzufuegenOverlay);
@@ -1123,6 +1247,8 @@ document.getElementById("kalender-hinzufuegen-bestaetigen")?.addEventListener("c
     return;
   }
 
+  if (pruefeKalenderHinzufuegenDopplung()) return;
+
   btn.disabled = true;
   hinweis.classList.remove("recipe-detail__kalender-hinweis--fehler");
   hinweis.textContent = "Wird gespeichert …";
@@ -1142,7 +1268,7 @@ document.getElementById("kalender-hinzufuegen-bestaetigen")?.addEventListener("c
   };
 
   try {
-    await aktualisiereGitHubJSON(
+    const neueDaten = await aktualisiereGitHubJSON(
       "data/kalender.json",
       (aktuelleListe) => {
         const belegt = aktuelleListe.some((eintrag) => eintrag.datum === datum && eintrag.slot === slot);
@@ -1155,6 +1281,10 @@ document.getElementById("kalender-hinzufuegen-bestaetigen")?.addEventListener("c
       },
       `Kalender: ${rezept.name} hinzufügen (${datum}, ${SLOT_LABELS[slot] || slot})`
     );
+
+    // Optimistisches Update: neuen Stand direkt im Cache übernehmen statt
+    // auf einen Re-Fetch (und den GitHub-Pages-Build-Delay) zu warten.
+    kalenderCache = neueDaten;
 
     schliesseKalenderHinzufuegenOverlay();
 
@@ -1670,7 +1800,7 @@ async function renderEinkaufsliste() {
 
   let kalender = [];
   try {
-    kalender = await ladeJSON("./data/kalender.json");
+    kalender = await ladeKalenderDaten();
   } catch (fehler) {
     console.warn("Kalender konnte nicht geladen werden:", fehler);
   }
