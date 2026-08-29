@@ -1,1 +1,9 @@
-[]
+[
+  { "id": "spaghetti", "name": "Spaghetti", "bild": "bilder/zutaten/spaghetti.png", "kategorie": "vorraete" },
+  { "id": "pancetta", "name": "Pancetta", "bild": "bilder/zutaten/pancetta.png", "kategorie": "fleisch_fisch" },
+  { "id": "pecorino", "name": "Pecorino", "bild": "bilder/zutaten/pecorino.png", "kategorie": "milchprodukte" },
+  { "id": "salz", "name": "Salz", "bild": "bilder/zutaten/salz.png", "kategorie": "gewuerze_oele" },
+  { "id": "olivenoel", "name": "Olivenöl", "bild": "bilder/zutaten/olivenoel.png", "kategorie": "gewuerze_oele" },
+  { "id": "ei", "name": "Ei", "bild": "bilder/zutaten/ei.png", "kategorie": "milchprodukte" },
+  { "id": "pfeffer", "name": "Pfeffer", "bild": "bilder/zutaten/pfeffer.png", "kategorie": "gewuerze_oele" }
+]

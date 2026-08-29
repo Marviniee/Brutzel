@@ -1,0 +1,33 @@
+{
+  "id": "spaghetti-carbonara",
+  "name": "Spaghetti Carbonara",
+  "kurzbeschreibung": "Klassische römische Pasta mit Ei, Pecorino und knuspriger Pancetta – ganz ohne Sahne.",
+  "foto": "bilder/rezepte/spaghetti-carbonara-foto.jpg",
+  "icon": "bilder/rezepte/spaghetti-carbonara-icon-hell.png",
+  "icon_dunkel": "bilder/rezepte/spaghetti-carbonara-icon-dunkel.png",
+  "kochzeit_minuten": 25,
+  "basisportionen": 4,
+  "typ": "normal",
+  "mahlzeiten": ["mittag", "abend"],
+  "schwierigkeit": "einfach",
+  "geschmack_tags": ["herzhaft", "cremig", "italienisch", "klassisch"],
+  "ernaehrungsform": [],
+  "zutaten": [
+    { "anzeige_text": "500 g Spaghetti", "menge": { "betrag": 500, "einheit": "g" }, "zutat_id": "spaghetti" },
+    { "anzeige_text": "100 g Pancetta", "menge": { "betrag": 100, "einheit": "g" }, "zutat_id": "pancetta" },
+    { "anzeige_text": "100 g Pecorino", "menge": { "betrag": 100, "einheit": "g" }, "zutat_id": "pecorino" },
+    { "anzeige_text": "Salz (fürs Nudelwasser)", "menge": { "betrag": 10, "einheit": "g" }, "zutat_id": "salz" },
+    { "anzeige_text": "2 EL Olivenöl", "menge": { "betrag": 30, "einheit": "ml" }, "zutat_id": "olivenoel" },
+    { "anzeige_text": "4 Eier (Gr. M)", "menge": { "betrag": 4, "einheit": "Stück" }, "zutat_id": "ei" },
+    { "anzeige_text": "Pfeffer, frisch gemahlen", "menge": { "betrag": 2, "einheit": "g" }, "zutat_id": "pfeffer" }
+  ],
+  "schritte": [
+    { "nummer": 1, "text": "Spaghetti in reichlich Salzwasser nach Packungsanweisung bissfest kochen. Währenddessen Pancetta würfeln und Pecorino fein reiben.", "foto": null, "technik_id": null, "zutaten_ids": ["spaghetti", "salz", "pancetta", "pecorino"] },
+    { "nummer": 2, "text": "Olivenöl in einer großen Pfanne erhitzen und die Pancetta darin knusprig anbraten.", "foto": null, "technik_id": null, "zutaten_ids": ["olivenoel", "pancetta"] },
+    { "nummer": 3, "text": "Die gekochten Spaghetti direkt zur Pancetta in die Pfanne geben und kurz durchschwenken.", "foto": null, "technik_id": null, "zutaten_ids": ["spaghetti"] },
+    { "nummer": 4, "text": "Eigelbe, ein ganzes Ei und die Hälfte des Pecorino in einer Schüssel gründlich verquirlen.", "foto": null, "technik_id": null, "zutaten_ids": ["ei", "pecorino"] },
+    { "nummer": 5, "text": "Pfanne vom Herd nehmen, die Ei-Käse-Mischung zu den Spaghetti geben und mit etwas Nudelwasser cremig verrühren (nicht mehr direkt erhitzen, sonst stockt das Ei).", "foto": null, "technik_id": null, "zutaten_ids": ["ei", "pecorino"] },
+    { "nummer": 6, "text": "Mit restlichem Pecorino und reichlich frisch gemahlenem Pfeffer bestreut servieren.", "foto": null, "technik_id": null, "zutaten_ids": ["pecorino", "pfeffer"] }
+  ],
+  "erstellt": "2026-08-29"
+}
